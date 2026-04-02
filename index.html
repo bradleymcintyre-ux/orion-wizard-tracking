@@ -1566,10 +1566,11 @@ window.addEventListener('DOMContentLoaded', () => {
   // Initialise tracker
   if (window.tracker) {
     tracker.initialise({
-      env:          new URLSearchParams(window.location.search).get('env') === 'dev' ? 'development' : 'production',
-      service:      'wizard_search_form',
-      organisation: 'Holiday Extras Limited',
-      lb:           false,
+      env:               new URLSearchParams(window.location.search).get('env') === 'dev' ? 'development' : 'production',
+      service:           'wizard_search_form',
+      organisation:      'Holiday Extras Limited',
+      lb:                false,
+      page_product_type: 'insurance',
       // PII field IDs — suppresses auto-capture on each keystroke
       // tracked explicitly at submit time via tracker.inline() instead
       untracked_inputs: ['travellerTitle','travellerFirstName','travellerLastName','travellerDob','emailInput']
