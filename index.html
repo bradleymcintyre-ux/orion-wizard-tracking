@@ -1435,6 +1435,8 @@ function confirmEmail() {
     });
     document.dispatchEvent(new CustomEvent('wizard:capture', { detail: { fieldName: 'email-q1-email' } }));
     logDebug('inline', 'capture', { name: 'email-q1-email', value: email });
+    tracker.customerState('recognised_with_email');
+    logDebug('customerState', 'recognised_with_email', {});
   }
   navigateTo('eligibility');
 }
