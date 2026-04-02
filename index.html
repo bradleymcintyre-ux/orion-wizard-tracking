@@ -443,7 +443,7 @@
     <h2 class="step-title">Holiday starts</h2>
     <div class="calendar" id="calStart"></div>
     <div id="calStartNote" class="cal-note"></div>
-    <!-- continue-btn has no id — data-track-name on the inline click is fired via wizardTrack() in confirmHolidayStart() -->
+    <!-- continue-btn has no id — data-track-name on the inline click is fired via tracker.inline() in confirmHolidayStart() -->
     <button class="continue-btn" id="btnStartContinue" onclick="confirmHolidayStart()" disabled>
       <div class="btn-text">
         <span class="btn-label">Continue</span>
@@ -510,7 +510,7 @@
 
   <!-- ===== STEP 9: TRAVELLER DETAILS (dynamic — reused for each traveller) ===== -->
   <!-- Fields have IDs (needed for JS reads) → in untracked_inputs                 -->
-  <!-- Tracked explicitly at submit time via wizardTrack() in confirmTraveller() -->
+  <!-- Tracked explicitly at submit time via tracker.inline() in confirmTraveller() -->
   <section class="step" id="step-traveller">
     <h2 class="step-title" id="travellerHeading">Traveller</h2>
 
@@ -819,14 +819,6 @@
      with test-harness additions noted inline.
 =================================================================== -->
 <script>
-// ─── wizardTrack wrapper ──────────────────────────────────────────────────────
-// Replaces tracker.tag() which is not supported and throws uncaught exceptions.
-// Injects product_type onto every inline event so no tag call is needed.
-let _productType = null;
-function wizardTrack(eventType, payload) {
-  tracker.inline(eventType, { ...payload, product_type: _productType });
-}
-
 // ─── Schema constants (from Orion Tracking Requirements doc) ─────────────────
 // Use these to validate page_system / page_type / page_product_type values
 // before they are sent. assertSchema() warns in the console for unknown values.
@@ -1007,19 +999,23 @@ function showStep(hash) {
     logDebug('page', `wizard_search_form:${pageType}`, { page_type: pageType, page_product_type: 'insurance' });
     if (window.tracker) tracker.page('landing', { page_type: pageType, page_product_type: 'insurance' });
 
+    // Dispatch stageLoad on every transition (struggle score counter)
+    document.dispatchEvent(new CustomEvent('wizard:stageLoad', { detail: { stageNumber: stageInfo.num } }));
+
     // ── Stage name auto-capture — fires once per stage per session ────────────
     // action_object.name matches page_type so the stage map needs no join.
     if (!visitedStages.has(stageInfo.num)) {
       const acPayload = { action: { name: pageType, value: stageInfo.label, location: pageType } };
       logDebug('inline', `auto_capture:${pageType}`, acPayload);
-      if (window.tracker) wizardTrack('auto_capture', acPayload);
+      if (window.tracker) tracker.inline('auto_capture', acPayload);
       visitedStages.add(stageInfo.num);
 
       // ── wizard_stage_total — fires once at stage 1 only ──────────────────
       if (stageInfo.num === 1 && !stageTotalFired) {
         const totalPayload = { action: { name: 'wizard_stage_total', value: TOTAL_STAGES, location: 'stage_1' } };
         logDebug('inline', 'auto_capture:wizard_stage_total', totalPayload);
-        if (window.tracker) wizardTrack('auto_capture', totalPayload);
+        if (window.tracker) tracker.inline('auto_capture', totalPayload);
+        document.dispatchEvent(new CustomEvent('wizard:stageTotal', { detail: { total: TOTAL_STAGES } }));
         stageTotalFired = true;
       }
     }
@@ -1153,9 +1149,8 @@ function updateCalContinue(type) {
 }
 
 function confirmHolidayStart() {
-  // wizardTrack() — dynamic value, mirrors the live site exactly
   if (window.tracker) {
-    wizardTrack('click', {
+    tracker.inline('click', {
       action: {
         name:     'cover_start-q4-continue',
         value:    toDateParam(wizardState.holidayStart) || '',
@@ -1165,6 +1160,7 @@ function confirmHolidayStart() {
       }
     });
     logDebug('inline', 'click', { name: 'cover_start-q4-continue', value: toDateParam(wizardState.holidayStart) });
+    document.dispatchEvent(new CustomEvent('wizard:click', { detail: { fieldName: 'cover_start-q4-continue', isField: false } }));
   }
   wizardState.holidayEnd = null;
   calState.end = { year: null, month: null, day: null };
@@ -1173,7 +1169,7 @@ function confirmHolidayStart() {
 
 function confirmHolidayEnd() {
   if (window.tracker) {
-    wizardTrack('click', {
+    tracker.inline('click', {
       action: {
         name:     'cover_end-q4-continue',
         value:    toDateParam(wizardState.holidayEnd) || '',
@@ -1183,6 +1179,7 @@ function confirmHolidayEnd() {
       }
     });
     logDebug('inline', 'click', { name: 'cover_end-q4-continue', value: toDateParam(wizardState.holidayEnd) });
+    document.dispatchEvent(new CustomEvent('wizard:click', { detail: { fieldName: 'cover_end-q4-continue', isField: false } }));
   }
   navigateTo('travellers');
 }
@@ -1374,11 +1371,16 @@ function confirmTraveller() {
   // PII fields captured explicitly at submit time (integration guide §PII Handling)
   if (window.tracker) {
     const prefix = `traveller${n}`;
-    wizardTrack('capture', { action: { name: prefix + '-q1-title',     value: title, type: 'select', id: 'travellerTitle',     location: currentPageType } });
-    wizardTrack('capture', { action: { name: prefix + '-q2-firstname', value: first, type: 'input',  id: 'travellerFirstName', location: currentPageType } });
-    wizardTrack('capture', { action: { name: prefix + '-q3-lastname',  value: last,  type: 'input',  id: 'travellerLastName',  location: currentPageType } });
-    wizardTrack('capture', { action: { name: prefix + '-q4-dob',       value: dob,   type: 'input',  id: 'travellerDob',       location: currentPageType } });
-    wizardTrack('click',   { action: { name: prefix + '-q5-continue',  value: `${title} ${first} ${last}`, type: 'button', text: 'Continue', location: currentPageType } });
+    tracker.inline('capture', { action: { name: prefix + '-q1-title',     value: title, type: 'select', text: title, id: 'travellerTitle',     location: currentPageType } });
+    document.dispatchEvent(new CustomEvent('wizard:capture', { detail: { fieldName: prefix + '-q1-title' } }));
+    tracker.inline('capture', { action: { name: prefix + '-q2-firstname', value: first, type: 'input',  text: first, id: 'travellerFirstName', location: currentPageType } });
+    document.dispatchEvent(new CustomEvent('wizard:capture', { detail: { fieldName: prefix + '-q2-firstname' } }));
+    tracker.inline('capture', { action: { name: prefix + '-q3-lastname',  value: last,  type: 'input',  text: last,  id: 'travellerLastName',  location: currentPageType } });
+    document.dispatchEvent(new CustomEvent('wizard:capture', { detail: { fieldName: prefix + '-q3-lastname' } }));
+    tracker.inline('capture', { action: { name: prefix + '-q4-dob',       value: dob,   type: 'input',  text: dob,   id: 'travellerDob',       location: currentPageType } });
+    document.dispatchEvent(new CustomEvent('wizard:capture', { detail: { fieldName: prefix + '-q4-dob' } }));
+    tracker.inline('click',   { action: { name: prefix + '-q5-continue',  value: `${title} ${first} ${last}`, type: 'button', text: 'Continue', location: currentPageType } });
+    document.dispatchEvent(new CustomEvent('wizard:click', { detail: { fieldName: prefix + '-q5-continue', isField: false } }));
     logDebug('inline', `traveller${n}-capture+continue`, { title, first, last, dob });
   }
 
@@ -1421,15 +1423,17 @@ function confirmEmail() {
   wizardState.email = email || null;
   // PII field captured explicitly at submit, not on keystroke (tracker-pr guide §PII Handling)
   if (window.tracker && email) {
-    wizardTrack('capture', {
+    tracker.inline('capture', {
       action: {
         name:     'email-q1-email',
         value:    email,
         type:     'input',
+        text:     email,
         id:       'emailInput',
         location: currentPageType
       }
     });
+    document.dispatchEvent(new CustomEvent('wizard:capture', { detail: { fieldName: 'email-q1-email' } }));
     logDebug('inline', 'capture', { name: 'email-q1-email', value: email });
   }
   navigateTo('eligibility');
@@ -1504,6 +1508,7 @@ function buildPayload() {
 }
 
 function submitQuote() {
+  document.dispatchEvent(new CustomEvent('wizard:complete'));
   navigateTo('results');
   document.getElementById('resultsLoading').style.display = 'block';
   document.getElementById('resultsError').style.display   = 'none';
@@ -1566,11 +1571,9 @@ window.addEventListener('DOMContentLoaded', () => {
       organisation: 'Holiday Extras Limited',
       lb:           false,
       // PII field IDs — suppresses auto-capture on each keystroke
-      // tracked explicitly at submit time via wizardTrack() instead
+      // tracked explicitly at submit time via tracker.inline() instead
       untracked_inputs: ['travellerTitle','travellerFirstName','travellerLastName','travellerDob','emailInput']
     });
-    // Set product type for wizardTrack wrapper — before any wizardTrack calls
-    _productType = 'insurance';
     logDebug('init', 'tracker.initialise', { service: 'wizard_search_form', organisation: 'Holiday Extras Limited' });
     // tracker.page() fires on the first showStep() call below — one per stage transition
 
@@ -1593,17 +1596,18 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!el) return;
     el.addEventListener('click', () => {
       const name = fieldName();
-      logDebug('inline', 'click:' + name, { name, value: el.value || null, type, id, location: currentPageType });
-      if (window.tracker) wizardTrack('click', {
+      logDebug('inline', 'click:' + name, { name, value: null, type, id, location: currentPageType });
+      if (window.tracker) tracker.inline('click', {
         action: {
           name,
-          value:    el.value || null,
+          value:    null,
           type,
           id,
           text:     el.placeholder || el.labels?.[0]?.innerText || null,
           location: currentPageType
         }
       });
+      document.dispatchEvent(new CustomEvent('wizard:click', { detail: { fieldName: name, isField: true } }));
     });
   });
 
@@ -1667,263 +1671,302 @@ function fireUnhandledRejection() { Promise.reject(new Error('Test unhandled rej
      struggle score — per Orion Tracking Requirements doc
 =================================================================== -->
 <script>
-// ─── Session signal counters (used for struggle score) ───────────────────────
-const _signals = {
-  rageClicks:    0,
-  deadClicks:    0,
-  uTurns:        0,
-  shallowScroll: false,   // true if user never passed 25% on current step
-  quickExit:     false    // true if u-turn happened within 3s of step load
-};
+
+// ─── Helper functions ──────────────────────────────────────────────────────────
+function getPageSection(el) {
+  const section = el.closest(
+    'header, footer, nav, main, aside, section, article, ' +
+    '[data-section], [data-track-section]'
+  );
+  if (!section) return 'unknown';
+  if (section.dataset.section)      return section.dataset.section;
+  if (section.dataset.trackSection) return section.dataset.trackSection;
+  return section.tagName.toLowerCase();
+}
+
+function getCssPath(el) {
+  const parts = [];
+  while (el && el.nodeType === Node.ELEMENT_NODE) {
+    let selector = el.nodeName.toLowerCase();
+    if (el.id) { selector += `#${el.id}`; parts.unshift(selector); break; }
+    if (el.className) selector += `.${el.className.trim().split(/\s+/)[0]}`;
+    parts.unshift(selector);
+    el = el.parentNode;
+  }
+  return parts.join(' > ');
+}
 
 // ─── Scroll depth ─────────────────────────────────────────────────────────────
-// Fires at 25 / 50 / 75 / 100% milestones, time-to-full-scroll, and
-// page_load_fully_scrolled / page_fully_scrolled on load.
-(function initScrollDepth() {
-  const milestones = [25, 50, 75, 100];
-  const fired = new Set();
-  let scrollStartTime = null;
+(function () {
+  const thresholds   = [25, 50, 75, 100];
+  const fired        = new Set();
+  const pageLoadTime = Date.now();
 
-  function getScrollPct() {
-    const el   = document.documentElement;
-    const max  = el.scrollHeight - el.clientHeight;
+  function getScrollDepth() {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    return docHeight > 0 ? Math.round((scrollTop / docHeight) * 100) : 0;
     if (max <= 0) return 100;
-    return Math.round((el.scrollTop / max) * 100);
+    return docHeight > 0 ? Math.round((scrollTop / docHeight) * 100) : 0;
   }
 
-  function checkScroll() {
-    const pct = getScrollPct();
-    if (pct > 0 && scrollStartTime === null) scrollStartTime = Date.now();
+  function getScrollSection() {
+    const el = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
+    return el ? getPageSection(el) : 'unknown';
+  }
 
-    milestones.forEach(m => {
-      if (pct >= m && !fired.has(m)) {
-        fired.add(m);
-        const payload = { action: { name: 'scroll_depth_reached', value: m, location: currentPageType } };
-        logDebug('inline', 'capture:scroll_depth_reached', payload);
-        if (window.tracker) wizardTrack('capture', payload);
+  function onScroll() {
+    const depth = getScrollDepth();
+    for (const threshold of thresholds) {
+      if (depth >= threshold && !fired.has(threshold)) {
+        fired.add(threshold);
+        logDebug('inline', 'auto_capture:scroll_depth_reached', { value: threshold });
+        if (window.tracker) tracker.inline('auto_capture', {
+          action: { name: 'scroll_depth_reached', value: threshold, location: getScrollSection() }
+        });
 
-        if (m === 25) _signals.shallowScroll = false;
-
-        if (m === 100 && scrollStartTime !== null) {
-          const secs = Math.round((Date.now() - scrollStartTime) / 1000);
-          const tPayload = { action: { name: 'time_to_full_scroll_time', value: secs, location: currentPageType } };
-          logDebug('inline', 'capture:time_to_full_scroll_time', tPayload);
-          if (window.tracker) wizardTrack('capture', tPayload);
-
-          const fpPayload = { action: { name: 'page_fully_scrolled', value: true, location: currentPageType } };
-          logDebug('inline', 'auto_capture:page_fully_scrolled', fpPayload);
-          if (window.tracker) wizardTrack('auto_capture', fpPayload);
+        if (threshold === 100) {
+          const secondsToFull = Math.round((Date.now() - pageLoadTime) / 1000);
+          const cappedSeconds  = Math.min(secondsToFull, 600);
+          logDebug('inline', 'auto_capture:page_fully_scrolled', {});
+          if (window.tracker) tracker.inline('auto_capture', {
+            action: { name: 'page_fully_scrolled', value: true, location: 'bottom' }
+          });
+          logDebug('inline', 'auto_capture:time_to_full_scroll_seconds', { value: cappedSeconds });
+          if (window.tracker) tracker.inline('auto_capture', {
+            action: { name: 'time_to_full_scroll_seconds', value: cappedSeconds, location: 'bottom' }
+          });
         }
       }
-    });
+    }
   }
 
-  window.addEventListener('scroll', checkScroll, { passive: true });
+  window.addEventListener('load', () => {
+    const ratio = document.documentElement.scrollHeight / window.innerHeight;
+    logDebug('inline', 'auto_capture:page_load_fully_scrolled', { value: Math.round(ratio * 100) / 100 });
+    if (window.tracker) tracker.inline('auto_capture', {
+      action: { name: 'page_load_fully_scrolled', value: Math.round(ratio * 100) / 100, location: 'full_page' }
+    });
+  });
 
-  // On step change reset fired set and check if page already fits in viewport
-  window._resetScrollDepth = function () {
-    fired.clear();
-    scrollStartTime = null;
-    _signals.shallowScroll = true;
-
-    const el  = document.documentElement;
-    const ratio = el.scrollHeight / el.clientHeight;
-    const fullyVisible = ratio <= 1.05;
-
-    const plPayload = { action: { name: 'page_load_fully_scrolled', value: Math.round(ratio * 100) / 100, location: currentPageType } };
-    logDebug('inline', 'auto_capture:page_load_fully_scrolled', plPayload);
-    if (window.tracker) wizardTrack('auto_capture', plPayload);
-
-    if (fullyVisible) {
-      [25, 50, 75, 100].forEach(m => fired.add(m));
-      _signals.shallowScroll = false;
-      const fpPayload = { action: { name: 'page_fully_scrolled', value: true, location: currentPageType } };
-      logDebug('inline', 'auto_capture:page_fully_scrolled', fpPayload);
-      if (window.tracker) wizardTrack('auto_capture', fpPayload);
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(() => { onScroll(); ticking = false; });
+      ticking = true;
     }
-  };
+  }, { passive: true });
 })();
 
-// Reset scroll tracking on each step transition.
-// showStep is a global function declaration (window.showStep). Overwriting window.showStep
-// here means the existing hashchange listener at line 1022 ("() => showStep(hash)")
-// also picks up the new wrapped version — no second listener needed.
-const _origShowStep = showStep;
-window.showStep = function (hash) {
-  _origShowStep(hash);
-  if (window._resetScrollDepth) window._resetScrollDepth();
-};
-
 // ─── Rage click ───────────────────────────────────────────────────────────────
-// 3+ clicks on the same element within 1.5 seconds
-(function initRageClick() {
-  let lastEl = null, clickCount = 0, clickTimer = null;
-
-  function getCSSPath(el) {
-    const parts = [];
-    while (el && el.nodeType === Node.ELEMENT_NODE) {
-      let sel = el.tagName.toLowerCase();
-      if (el.id) { sel += '#' + el.id; parts.unshift(sel); break; }
-      if (el.className) sel += '.' + [...el.classList].slice(0, 2).join('.');
-      const siblings = el.parentNode ? [...el.parentNode.children].filter(s => s.tagName === el.tagName) : [];
-      if (siblings.length > 1) sel += `:nth-child(${[...el.parentNode.children].indexOf(el) + 1})`;
-      parts.unshift(sel);
-      el = el.parentNode;
-    }
-    return parts.join(' > ');
-  }
+(function () {
+  const CLICK_THRESHOLD = 3;
+  const TIME_WINDOW_MS  = 2000;
+  const COOLDOWN_MS     = 5000;
+  const clickMap        = new Map();
+  const cooldowns       = new Set();
 
   document.addEventListener('click', function (e) {
-    if (e.target === lastEl) {
-      clickCount++;
-      clearTimeout(clickTimer);
-      clickTimer = setTimeout(() => { clickCount = 0; lastEl = null; }, 1500);
+    const elementKey = getCssPath(e.target);
+    if (cooldowns.has(elementKey)) return;
 
-      if (clickCount >= 3) {
-        const cssPath = getCSSPath(e.target);
-        _signals.rageClicks++;
-        const payload = buildError({
-          level: 'warn', error_type: 'client', error_code: 'rage_click',
-          error_message: 'User clicked the same element 3+ times in rapid succession',
-          component: cssPath, customer_facing: false, recoverable: true,
-          extra: { css_path: cssPath, click_count: clickCount }
-        });
-        logDebug('inline', 'click:rage_click', { name: 'rage_click', value: cssPath, click_count: clickCount });
-        if (window.tracker) {
-          wizardTrack('click', { action: { name: 'rage_click', value: cssPath, location: currentPageType } });
-          tracker.error(payload);
-        }
-        clickCount = 0;
-      }
-    } else {
-      lastEl = e.target;
-      clickCount = 1;
-      clearTimeout(clickTimer);
-      clickTimer = setTimeout(() => { clickCount = 0; lastEl = null; }, 1500);
+    const now    = Date.now();
+    const record = clickMap.get(elementKey) || { count: 0, firstClick: now };
+
+    if (now - record.firstClick > TIME_WINDOW_MS) {
+      record.count      = 0;
+      record.firstClick = now;
+    }
+
+    record.count++;
+    clickMap.set(elementKey, record);
+
+    if (record.count >= CLICK_THRESHOLD) {
+      logDebug('inline', 'click:rage_click', { name: 'rage_click', value: elementKey, click_count: record.count });
+      if (window.tracker) tracker.inline('click', {
+        action: {
+          name:     'rage_click',
+          value:    elementKey,
+          type:     e.target.tagName.toLowerCase(),
+          text:     e.target.innerText?.trim().slice(0, 50) || null,
+          id:       e.target.id || null,
+          href:     e.target.href || null,
+          location: getPageSection(e.target)
+        },
+        tags: [
+          { name: 'click_count',    number: record.count },
+          { name: 'time_window_ms', number: now - record.firstClick },
+          { name: 'x_percent',      number: Math.round((e.clientX / window.innerWidth) * 100) },
+          { name: 'y_percent',      number: Math.round((e.clientY / window.innerHeight) * 100) },
+          { name: 'viewport_width', number: window.innerWidth }
+        ]
+      });
+      document.dispatchEvent(new CustomEvent('wizard:rageClick'));
+
+      cooldowns.add(elementKey);
+      setTimeout(() => cooldowns.delete(elementKey), COOLDOWN_MS);
+      clickMap.delete(elementKey);
     }
   }, true);
 })();
 
 // ─── Dead click ───────────────────────────────────────────────────────────────
-// Fires when user clicks an element that has no interactive behaviour.
-// Interactive = a/button/input/select/textarea, has onclick attr, has cursor:pointer,
-// has data-track-name, or is inside one of the above.
-(function initDeadClick() {
-  function isInteractive(el) {
-    const INTERACTIVE_TAGS = new Set(['A','BUTTON','INPUT','SELECT','TEXTAREA','LABEL']);
-    let node = el;
-    while (node && node !== document.body) {
-      if (INTERACTIVE_TAGS.has(node.tagName)) return true;
-      if (node.getAttribute('onclick')) return true;
-      if (node.dataset && node.dataset.trackName) return true;
-      if (node.getAttribute('role') === 'button') return true;
-      const cursor = window.getComputedStyle(node).cursor;
-      if (cursor === 'pointer') return true;
-      node = node.parentElement;
-    }
-    return false;
-  }
-
-  function getCSSPath(el) {
-    const parts = [];
-    let node = el;
-    while (node && node.nodeType === Node.ELEMENT_NODE) {
-      let sel = node.tagName.toLowerCase();
-      if (node.id) { sel += '#' + node.id; parts.unshift(sel); break; }
-      if (node.className) sel += '.' + [...node.classList].slice(0, 2).join('.');
-      parts.unshift(sel);
-      node = node.parentElement;
-    }
-    return parts.join(' > ');
-  }
-
+(function () {
   document.addEventListener('click', function (e) {
-    if (!isInteractive(e.target)) {
-      const cssPath = getCSSPath(e.target);
-      _signals.deadClicks++;
-      logDebug('inline', 'click:dead_click', { name: 'dead_click', value: cssPath });
-      if (window.tracker) wizardTrack('click', { action: { name: 'dead_click', value: cssPath, location: currentPageType } });
+    const style          = window.getComputedStyle(e.target);
+    const looksClickable = style.cursor === 'pointer';
+    const isInteractive  = e.target.closest('a, button, [role="button"], [onclick]');
+
+    if (looksClickable && !isInteractive) {
+      logDebug('inline', 'click:dead_click', { name: 'dead_click', value: getCssPath(e.target) });
+      if (window.tracker) tracker.inline('click', {
+        action: {
+          name:     'dead_click',
+          value:    getCssPath(e.target),
+          type:     e.target.tagName.toLowerCase(),
+          text:     e.target.innerText?.trim().slice(0, 50) || null,
+          id:       e.target.id || null,
+          href:     e.target.href || null,
+          location: getPageSection(e.target)
+        },
+        tags: [
+          { name: 'x_percent',      number: Math.round((e.clientX / window.innerWidth) * 100) },
+          { name: 'y_percent',      number: Math.round((e.clientY / window.innerHeight) * 100) },
+          { name: 'scroll_y',       number: Math.round(window.scrollY) },
+          { name: 'viewport_width', number: window.innerWidth }
+        ]
+      });
+      document.dispatchEvent(new CustomEvent('wizard:deadClick'));
     }
   }, true);
 })();
 
 // ─── U-turn ───────────────────────────────────────────────────────────────────
-// Fires when user navigates back without meaningfully interacting with a step.
-// "Meaningful interaction" = at least one wizardTrack() or tracker.track() call
-// fired since the step loaded (other than the page view itself).
-(function initUTurn() {
-  let _stepLoadTime = Date.now();
-  let _hadInteraction = false;
-  let _prevHash = window.location.hash.slice(1) || 'trip-type';
+(function () {
+  const arrivalTime         = Date.now();
+  const landingHash         = window.location.hash;
+  const U_TURN_THRESHOLD_MS = 10000;
 
-  // Mark interaction whenever inline/track fires (after intercept is set up)
-  window._markInteraction = function () { _hadInteraction = true; };
+  function getCurrentScrollDepth() {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    return docHeight > 0 ? Math.round((scrollTop / docHeight) * 100) : 0;
+  }
 
-  window.addEventListener('hashchange', function () {
-    const newHash = window.location.hash.slice(1);
-    const steps   = window.getSteps ? getSteps() : [];
-    const prevIdx = steps.indexOf(_prevHash.startsWith('traveller-') ? 'traveller' : _prevHash);
-    const newIdx  = steps.indexOf(newHash.startsWith('traveller-')   ? 'traveller' : newHash);
-
-    console.log('[u-turn debug]', { prevHash: _prevHash, newHash, prevIdx, newIdx, hadInteraction: _hadInteraction, steps });
-
-    // Navigating backwards without interaction = u-turn
-    if (newIdx < prevIdx && !_hadInteraction) {
-      const elapsed = Math.round((Date.now() - _stepLoadTime) / 1000);
-      _signals.uTurns++;
-      if (elapsed <= 3) _signals.quickExit = true;
-      const stageLabel = STAGES[_prevHash]?.label || (_prevHash.startsWith('traveller-') ? 'traveller_details' : _prevHash);
-      logDebug('inline', 'auto_capture:u_turn', { name: 'u_turn', value: stageLabel, time_on_step_seconds: elapsed });
-      if (window.tracker) wizardTrack('auto_capture', { action: { name: 'u_turn', value: stageLabel, location: currentPageType }, tags: [{ name: 'time_on_step_seconds', number: elapsed }] });
+  window.addEventListener('popstate', function () {
+    if ((Date.now() - arrivalTime) < U_TURN_THRESHOLD_MS) {
+      const timeSpent = Math.round((Date.now() - arrivalTime) / 1000);
+      logDebug('inline', 'auto_capture:u_turn', { value: currentPageType, time_spent_seconds: timeSpent });
+      if (window.tracker) tracker.inline('auto_capture', {
+        action: {
+          name:     'u_turn',
+          value:    currentPageType,
+          location: 'landing'
+        },
+        tags: [
+          { name: 'abandoned_page',       string: landingHash },
+          { name: 'time_spent_seconds',   number: timeSpent },
+          { name: 'scroll_depth_reached', number: getCurrentScrollDepth() },
+          { name: 'viewport_width',       number: window.innerWidth }
+        ]
+      });
+      document.dispatchEvent(new CustomEvent('wizard:uTurn'));
     }
-
-    _prevHash        = newHash;
-    _stepLoadTime    = Date.now();
-    _hadInteraction  = false;
   });
 })();
 
 // ─── Struggle score ───────────────────────────────────────────────────────────
-// Composite metric. Fired on beforeunload so it captures the full session.
-// For a single test session rates are 0 or 1 (signal occurred or not).
-// formula: ((rage_click_rate*0.35) + (dead_click_rate*0.25) + (u_turn_rate*0.25)
-//           + (shallow_scroll_rate*0.10) + (quick_exit_rate*0.05)) * 100
-function calcAndFireStruggleScore() {
-  const rr = _signals.rageClicks  > 0 ? 1 : 0;
-  const dr = _signals.deadClicks  > 0 ? 1 : 0;
-  const ur = _signals.uTurns      > 0 ? 1 : 0;
-  const sr = _signals.shallowScroll   ? 1 : 0;
-  const qr = _signals.quickExit       ? 1 : 0;
+// Event-driven. Fires once on wizard:complete (submit) or visibilitychange/pagehide
+// (abandonment). Formula: (rage 30%) + (dead 25%) + (u-turn 20%) +
+// (stage drop-off 15%) + (field abandon 10%) * 100
+(function () {
 
-  const score = Math.round(((rr * 0.35) + (dr * 0.25) + (ur * 0.25) + (sr * 0.10) + (qr * 0.05)) * 100);
-
-  const hash = window.location.hash.slice(1) || 'trip-type';
-  const payload = {
-    event_name:  'struggle_score',
-    event_value: score,
-    event_properties: {
-      domain:               window.location.hostname,
-      brand:                'holidayextras',
-      agent_code:           'HX',
-      locale:               'en-GB',
-      currency:             'GBP',
-      page_product_type:    'insurance',
-      page_product_location: '',
-      page_type:            'wizard_search_form',
-      date:                 new Date().toISOString().slice(0, 10),
-      signals: { rage_clicks: _signals.rageClicks, dead_clicks: _signals.deadClicks,
-                 u_turns: _signals.uTurns, shallow_scroll: _signals.shallowScroll,
-                 quick_exit: _signals.quickExit }
-    }
+  const session = {
+    totalClicks:    0,
+    rageClicks:     0,
+    deadClicks:     0,
+    uTurns:         0,
+    stageLoads:     0,
+    stagesTotal:    null,
+    highestStage:   0,
+    fieldsClicked:  new Set(),
+    fieldsCaptured: new Set(),
+    completed:      false,
+    scoreFired:     false
   };
-  logDebug('track', 'struggle_score', payload);
-  if (window.tracker) tracker.track('auto_capture', payload);
-}
 
-window.addEventListener('beforeunload', calcAndFireStruggleScore);
+  document.addEventListener('wizard:stageLoad',  (e) => {
+    session.stageLoads++;
+    session.highestStage = Math.max(session.highestStage, e.detail.stageNumber);
+  });
+  document.addEventListener('wizard:stageTotal', (e) => { session.stagesTotal = e.detail.total; });
+  document.addEventListener('wizard:click',      (e) => {
+    session.totalClicks++;
+    if (e.detail.isField) session.fieldsClicked.add(e.detail.fieldName);
+  });
+  document.addEventListener('wizard:capture',    (e) => { session.fieldsCaptured.add(e.detail.fieldName); });
+  document.addEventListener('wizard:rageClick',  ()  => { session.rageClicks++; });
+  document.addEventListener('wizard:deadClick',  ()  => { session.deadClicks++; });
+  document.addEventListener('wizard:uTurn',      ()  => { session.uTurns++; });
+  document.addEventListener('wizard:complete',   ()  => { session.completed = true; fireStruggleScore('completed'); });
 
-// Also expose for manual testing
-window._calcStruggleScore = calcAndFireStruggleScore;
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && !session.scoreFired) fireStruggleScore('abandoned');
+  });
+  window.addEventListener('pagehide', () => {
+    if (!session.scoreFired) fireStruggleScore('abandoned');
+  });
+
+  function calculateScore() {
+    const rageClickRate = session.totalClicks > 0 ? session.rageClicks / session.totalClicks : 0;
+    const deadClickRate = session.totalClicks > 0 ? session.deadClicks / session.totalClicks : 0;
+    const uTurnRate     = session.stageLoads  > 0 ? session.uTurns    / session.stageLoads  : 0;
+    const stageDropOff  = session.stagesTotal
+      ? 1 - (session.highestStage / session.stagesTotal) : 0;
+    const fieldAbandon  = session.fieldsClicked.size > 0
+      ? (session.fieldsClicked.size - session.fieldsCaptured.size) / session.fieldsClicked.size : 0;
+
+    return Math.round((
+      (rageClickRate * 0.30) +
+      (deadClickRate * 0.25) +
+      (uTurnRate     * 0.20) +
+      (stageDropOff  * 0.15) +
+      (fieldAbandon  * 0.10)
+    ) * 100);
+  }
+
+  function fireStruggleScore(outcome) {
+    if (session.scoreFired) return;
+    session.scoreFired = true;
+
+    const score = calculateScore();
+    const ssPayload = {
+      action: {
+        name:     'struggle_score',
+        value:    score,
+        location: `stage_${session.highestStage}`
+      },
+      tags: [
+        { name: 'outcome',          string: outcome },
+        { name: 'highest_stage',    number: session.highestStage },
+        { name: 'stages_total',     number: session.stagesTotal },
+        { name: 'rage_click_count', number: session.rageClicks },
+        { name: 'dead_click_count', number: session.deadClicks },
+        { name: 'u_turn_count',     number: session.uTurns },
+        { name: 'fields_clicked',   number: session.fieldsClicked.size },
+        { name: 'fields_captured',  number: session.fieldsCaptured.size },
+        { name: 'fields_abandoned', number: session.fieldsClicked.size - session.fieldsCaptured.size },
+        { name: 'total_clicks',     number: session.totalClicks }
+      ]
+    };
+    logDebug('inline', 'auto_capture:struggle_score', ssPayload);
+    if (window.tracker) tracker.inline('auto_capture', ssPayload);
+  }
+
+  // Expose for manual testing via debug panel button
+  window._calcStruggleScore = () => fireStruggleScore('manual');
+
+})();
 </script>
 
 <!-- ===================================================================
@@ -1991,7 +2034,7 @@ function toggleErrorCard() {
   };
   tracker.page   = (t, p) => { logDebug('page',   t, p); orig.page(t, p);   };
   tracker.track  = (e, p) => { logDebug('track',  e, p); orig.track(e, p);  };
-  tracker.inline = (a, p) => { logDebug('inline', a, p); if (window._markInteraction) window._markInteraction(); orig.inline(a, p); };
+  tracker.inline = (a, p) => { logDebug('inline', a, p); orig.inline(a, p); };
   tracker.error  = (p)    => { logDebug('error',  p.code || 'error', p); orig.error(p); };
   logDebug('init', 'tracker-intercepted', { status: 'ready — all tracker calls will appear here' });
 })();
