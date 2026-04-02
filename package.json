@@ -1,0 +1,8 @@
+{
+  "name": "orion-wizard-tracking",
+  "version": "1.0.0",
+  "description": "Insurance search wizard with Orion tracker integration",
+  "scripts": {
+    "start": "npx serve . -p 3000 --no-clipboard"
+  }
+}

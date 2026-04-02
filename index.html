@@ -1,0 +1,1968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Insurance Wizard — Orion Tracking Test</title>
+
+  <!-- HX Tracker — explicit https so the script loads when opened as file:// locally -->
+  <script src="https://dbq5t2jl0vcpj.cloudfront.net/hx-tracker/tracker-v6-latest.min.js"
+          onerror="window._trackerLoadFailed=true;logDebug('init','tracker-load-failed',{error:'Script blocked or unreachable — check console / network tab'})"></script>
+
+  <style>
+    /* ===== RESET ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 18px; -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      font-weight: 300;
+      color: #1a1a2e;
+      background: #f5f5f7;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== CSS VARIABLES ===== */
+    :root {
+      --purple: #312782;
+      --purple-light: #f0edf8;
+      --gold: #f5c518;
+      --white: #ffffff;
+      --grey-light: #e8e8ec;
+      --grey-text: #999;
+      --max-width: 460px;
+      --progress-height: 4px;
+    }
+
+    /* ===== TEST HARNESS NOTICE ===== */
+    .test-notice {
+      background: #fff8e1;
+      border-bottom: 2px solid #f5c518;
+      padding: 8px 16px;
+      font-size: 12px;
+      color: #555;
+      text-align: center;
+    }
+    .test-notice code { background: #f0f0f8; padding: 1px 4px; border-radius: 3px; }
+
+    /* ===== LAYOUT ===== */
+    .app {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      min-height: 100vh;
+      background: var(--white);
+      position: relative;
+    }
+
+    /* ===== HEADER ===== */
+    .hx-header {
+      background: var(--purple);
+      color: var(--white);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .hx-header .logo { font-size: 18px; font-weight: 700; }
+    .hx-header .product { font-size: 13px; opacity: 0.8; }
+    .header-back {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%; border: none;
+      color: var(--white); font-size: 20px; cursor: pointer;
+    }
+    .header-back.hidden { display: none; }
+
+    /* ===== PROGRESS BAR ===== */
+    .progress-bar { height: var(--progress-height); background: var(--grey-light); }
+    .progress-fill {
+      height: 100%; background: var(--gold);
+      transition: width 0.4s ease;
+      border-radius: 0 2px 2px 0;
+    }
+
+    /* ===== STEPS ===== */
+    .step { display: none; padding: 24px 20px 100px; }
+    .step.active { display: block; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== TYPOGRAPHY ===== */
+    .step-label  { font-size: 14px; font-weight: 400; color: var(--grey-text); margin-bottom: 4px; }
+    .step-title  { font-size: 24px; font-weight: 700; line-height: 1.2; margin-bottom: 18px; }
+    .step-desc   { font-size: 16px; font-weight: 300; color: #555; line-height: 1.5; margin-bottom: 14px; }
+    .mt-16 { margin-top: 16px; }
+    .mb-24 { margin-bottom: 24px; }
+
+    /* ===== CARD BUTTONS ===== */
+    .card {
+      border: 2px solid var(--purple);
+      border-radius: 12px; padding: 18px 20px; margin-bottom: 12px;
+      cursor: pointer; background: var(--white);
+      transition: background 0.15s, transform 0.1s;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .card:active { background: var(--purple-light); transform: scale(0.98); }
+    .card-content { flex: 1; }
+    .card-title   { font-size: 17px; font-weight: 700; color: var(--purple); margin-bottom: 3px; }
+    .card-subtitle { font-size: 15px; font-weight: 300; color: #555; line-height: 1.4; }
+    .card-chevron  { font-size: 20px; color: var(--purple); margin-left: 12px; flex-shrink: 0; }
+    .card-large { padding: 22px 20px; }
+    .card-large .card-title { font-size: 19px; margin-bottom: 6px; }
+
+    /* ===== YES/NO CARDS ===== */
+    .cards-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .card-yn {
+      border: 2px solid var(--purple); border-radius: 12px; padding: 16px;
+      cursor: pointer; background: var(--white);
+      transition: background 0.15s, transform 0.1s;
+      display: flex; flex-direction: column;
+    }
+    .card-yn:active { background: var(--purple-light); transform: scale(0.97); }
+    .yn-title   { font-size: 18px; font-weight: 700; color: var(--purple); margin-bottom: 5px; display: flex; align-items: center; justify-content: space-between; }
+    .yn-subtitle { font-size: 14px; font-weight: 300; color: #555; line-height: 1.4; }
+    .yn-chevron { font-size: 17px; color: var(--purple); }
+
+    /* ===== NUMBER GRID ===== */
+    .number-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .number-btn {
+      border: 2px solid var(--purple); border-radius: 12px; padding: 20px;
+      cursor: pointer; background: var(--white);
+      font-family: inherit; font-size: 22px; font-weight: 700;
+      color: var(--purple); text-align: center;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .number-btn:active { background: var(--purple-light); transform: scale(0.95); }
+
+    /* ===== AMOUNT BUTTONS ===== */
+    .amount-btn {
+      display: block; width: 100%;
+      border: 2px solid var(--purple); border-radius: 12px;
+      padding: 14px 20px; margin-bottom: 10px;
+      cursor: pointer; background: var(--white);
+      font-family: inherit; font-size: 16px; font-weight: 300;
+      color: #1a1a2e; text-align: left;
+      transition: background 0.15s;
+    }
+    .amount-btn strong { font-weight: 700; color: var(--purple); }
+    .amount-btn:active { background: var(--purple-light); }
+
+    /* ===== CONTINUE BUTTON ===== */
+    .continue-btn {
+      position: fixed; bottom: 20px;
+      left: 50%; transform: translateX(-50%);
+      width: calc(var(--max-width) - 40px); max-width: 420px;
+      background: var(--purple); color: var(--white);
+      border: none; border-radius: 12px; padding: 16px 20px;
+      cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 4px 20px rgba(49,39,130,0.35);
+    }
+    .continue-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-text { display: flex; flex-direction: column; align-items: flex-start; }
+    .btn-label  { font-size: 17px; font-weight: 700; }
+    .btn-detail { font-size: 14px; font-weight: 300; opacity: 0.85; margin-top: 2px; }
+    .btn-chevron { font-size: 24px; }
+
+    /* ===== FORM FIELDS ===== */
+    .form-group { margin-bottom: 16px; }
+    .form-field {
+      display: block; border: 2px solid var(--purple); border-radius: 10px;
+      padding: 12px 16px; cursor: text; position: relative;
+    }
+    .field-label { display: block; font-size: 12px; color: var(--grey-text); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .form-field input,
+    .form-field select {
+      display: block; width: 100%; border: none; outline: none;
+      font-family: inherit; font-size: 17px; font-weight: 400; color: #1a1a2e;
+      background: transparent; padding: 0;
+    }
+    .form-field select { -webkit-appearance: none; }
+    .title-field { position: relative; }
+    .select-arrow { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: var(--purple); pointer-events: none; font-size: 14px; }
+
+    /* ===== EMAIL ===== */
+    .email-row { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 12px; }
+    .email-row .form-field { flex: 1; }
+    .email-send {
+      width: 52px; height: 52px; flex-shrink: 0;
+      background: var(--purple); color: var(--white);
+      border: none; border-radius: 10px; font-size: 20px; cursor: pointer;
+    }
+    .email-skip {
+      display: block; width: 100%;
+      background: transparent; border: 2px solid var(--grey-light);
+      border-radius: 10px; padding: 14px; font-family: inherit;
+      font-size: 15px; color: var(--grey-text); cursor: pointer;
+    }
+
+    /* ===== CALENDAR ===== */
+    .cal-section { margin-bottom: 12px; }
+    .cal-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--grey-text); margin-bottom: 8px; }
+    .cal-year-grid,
+    .cal-month-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .cal-year-grid { grid-template-columns: 1fr 1fr; }
+    .cal-btn {
+      border: 2px solid var(--purple); border-radius: 8px; padding: 10px;
+      cursor: pointer; background: var(--white);
+      font-family: inherit; font-size: 15px; font-weight: 500; color: var(--purple);
+      text-align: center; transition: background 0.1s;
+    }
+    .cal-btn:active, .cal-btn.selected { background: var(--purple); color: var(--white); }
+    .cal-day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 4px; }
+    .cal-day-header { font-size: 11px; text-align: center; color: var(--grey-text); padding: 2px 0; }
+    .cal-day {
+      border: 1px solid var(--grey-light); border-radius: 6px; padding: 7px 2px;
+      cursor: pointer; background: var(--white);
+      font-family: inherit; font-size: 14px; text-align: center; color: #1a1a2e;
+      transition: background 0.1s;
+    }
+    .cal-day.empty { border-color: transparent; cursor: default; }
+    .cal-day.past  { color: var(--grey-text); cursor: not-allowed; }
+    .cal-day.selected { background: var(--purple); color: var(--white); border-color: var(--purple); }
+    .cal-day:not(.empty):not(.past):active { background: var(--purple-light); }
+    .cal-note { font-size: 13px; color: #555; margin-bottom: 8px; }
+
+    /* ===== MEDICAL ===== */
+    .medical-body { background: #f8f8fc; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+    .medical-body p { font-size: 15px; color: #333; line-height: 1.5; margin-bottom: 8px; }
+    .medical-body p:last-child { margin-bottom: 0; }
+    .medical-body h4 { font-size: 15px; font-weight: 700; color: var(--purple); margin-bottom: 4px; margin-top: 10px; }
+    .medical-body h4:first-child { margin-top: 0; }
+    .hardstop-box { background: #fff3f3; border: 2px solid #e57373; border-radius: 10px; padding: 16px; font-size: 15px; line-height: 1.6; }
+    .hardstop-box p { margin-bottom: 8px; }
+    .hardstop-box ul { margin-left: 18px; }
+    .hardstop-box a { color: var(--purple); }
+
+    /* ===== ELIGIBILITY ===== */
+    .eligibility-section { background: #f8f8fc; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+    .eligibility-heading { font-size: 14px; font-weight: 700; color: #e57373; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; }
+    .eligibility-text { font-size: 14px; color: #333; line-height: 1.5; margin-bottom: 6px; }
+    .eligibility-text:last-child { margin-bottom: 0; }
+
+    /* ===== SUMMARY ===== */
+    .summary-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--grey-text); margin: 16px 0 8px; }
+    .summary-row { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--grey-light); font-size: 15px; }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row .s-label { color: #555; }
+    .summary-row .s-value { font-weight: 600; color: #1a1a2e; text-align: right; }
+
+    /* ===== VALIDATION ===== */
+    .validation-msg { font-size: 13px; color: #e57373; margin-top: 6px; min-height: 18px; }
+    .info-msg { font-size: 13px; color: #555; background: #fff8e1; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; }
+    .form-field.has-error { border-color: #e57373; background: #fff8f8; }
+    .field-error { font-size: 13px; color: #e57373; margin-top: 5px; padding-left: 2px; display: none; }
+    .field-error.visible { display: block; }
+
+    /* ===== RESULTS ===== */
+    .spinner { width: 36px; height: 36px; border: 3px solid var(--grey-light); border-top-color: var(--purple); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .results-loading { padding: 40px 20px; text-align: center; color: #555; }
+    .results-error { padding: 20px; background: #fff3f3; border-radius: 10px; color: #c62828; font-size: 15px; }
+    .back-btn { margin-top: 16px; background: transparent; border: 2px solid var(--grey-light); border-radius: 10px; padding: 12px 20px; font-family: inherit; font-size: 15px; color: #555; cursor: pointer; width: 100%; }
+
+    /* ===== DEBUG PANEL ===== */
+    .debug-panel {
+      position: fixed; bottom: 0; right: 0;
+      width: 400px; max-height: 300px;
+      background: #1a1a2e; color: #e0e0ff;
+      font-family: "SF Mono", "Fira Code", monospace; font-size: 11px;
+      border-top-left-radius: 8px; overflow: hidden;
+      z-index: 9999; box-shadow: 0 -2px 16px rgba(0,0,0,0.4);
+    }
+    .debug-header {
+      background: #312782; padding: 6px 12px;
+      display: flex; justify-content: space-between; align-items: center;
+      cursor: pointer; user-select: none;
+    }
+    .debug-header span { font-weight: 600; font-size: 12px; letter-spacing: 0.4px; }
+    .debug-badge { background: #ff5252; color: #fff; border-radius: 10px; padding: 1px 7px; font-size: 10px; font-weight: 700; }
+    .debug-body { overflow-y: auto; max-height: 255px; padding: 4px; }
+    .log-entry { border-bottom: 1px solid #2a2a4a; padding: 4px; }
+    .log-entry.is-error { border-left: 2px solid #ff6b6b; }
+    .log-entry .ts      { color: #888; margin-right: 4px; }
+    .log-entry .m-page       { color: #69d2e7; }
+    .log-entry .m-track      { color: #a7dbd8; }
+    .log-entry .m-inline     { color: #e0d1ff; }
+    .log-entry .m-init       { color: #f9c640; }
+    .log-entry .m-error      { color: #ff6b6b; }
+    .log-entry .m-autocapture{ color: #80ffb0; }  /* green — auto_capture / behavioural signals */
+    .log-entry pre { margin-top: 2px; white-space: pre-wrap; word-break: break-all; color: #c8c8e8; font-size: 10px; }
+
+    /* ===== ERROR TEST CARD ===== */
+    .error-card {
+      position: fixed; bottom: 310px; right: 0;
+      width: 400px; background: #1a1a2e;
+      border-top-left-radius: 8px;
+      z-index: 9998; overflow: hidden;
+    }
+    .error-card-header {
+      background: #4a148c; padding: 6px 12px;
+      display: flex; justify-content: space-between; align-items: center;
+      cursor: pointer; user-select: none;
+    }
+    .error-card-header span { font-size: 12px; font-weight: 600; color: #fff; letter-spacing: 0.4px; }
+    .error-card-body { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+    .err-btn {
+      border: none; border-radius: 5px; padding: 6px 10px;
+      font-family: monospace; font-size: 11px; color: #fff; cursor: pointer; text-align: left;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Test harness notice -->
+<div class="test-notice">
+  <strong>Local test harness</strong> — events logged bottom-right &amp; browser console &nbsp;|&nbsp;
+  Add <code>?trackdebug=1</code> for tracker debug mode &nbsp;|&nbsp;
+  Tracker: <code>wizard_search_form</code> / <code>Holiday Extras Limited</code> &nbsp;|&nbsp; page_product_type: <code>insurance</code> &nbsp;|&nbsp; page_type: <code>stage_N</code> per stage
+</div>
+
+<main>
+<div class="app">
+
+  <!-- Header -->
+  <div class="hx-header">
+    <button class="header-back hidden" id="btnBack" onclick="goBack()">‹</button>
+    <div>
+      <div class="logo">Holiday Extras</div>
+      <div class="product">Travel Insurance Quote</div>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill" style="width:0%"></div>
+  </div>
+
+  <!-- ===== STEP 1: TRIP TYPE ===== -->
+  <!-- Static elements — no id conflict — tracker auto-captures on click -->
+  <section class="step" id="step-trip-type">
+    <h2 class="step-title">How many trips are you planning in the next 12 months?</h2>
+
+    <div class="card card-large"
+         data-track-name="cover_type"
+         data-track-value="annual"
+         onclick="selectTripType('annual')">
+      <div class="card-content">
+        <div class="card-title">Annual Cover</div>
+        <div class="card-subtitle">Unlimited trips for 12 months. Usually better value if you travel more than once.</div>
+      </div>
+      <span class="card-chevron">›</span>
+    </div>
+
+    <p class="step-desc mt-16 mb-24">Annual cover renews automatically — we'll remind you before it does.</p>
+
+    <div class="card card-large"
+         data-track-name="cover_type"
+         data-track-value="single"
+         onclick="selectTripType('single')">
+      <div class="card-content">
+        <div class="card-title">Single Trip Cover</div>
+        <div class="card-subtitle">One trip only. You'll still see the annual price to compare before you decide.</div>
+      </div>
+      <span class="card-chevron">›</span>
+    </div>
+  </section>
+
+  <!-- ===== STEP 2: DESTINATION ===== -->
+  <section class="step" id="step-destination">
+    <h2 class="step-title">Travelling to</h2>
+
+    <div class="card" data-track-name="destination" data-track-value="europe-inc" onclick="selectDestination('europe-inc')">
+      <div class="card-content">
+        <div class="card-title">Europe <em>including</em></div>
+        <div class="card-subtitle">Spain, Cyprus, Malta, Turkey, Greece</div>
+      </div>
+      <span class="card-chevron">›</span>
+    </div>
+    <div class="card" data-track-name="destination" data-track-value="europe-exc" onclick="selectDestination('europe-exc')">
+      <div class="card-content">
+        <div class="card-title">Europe <em>excluding</em></div>
+        <div class="card-subtitle">Spain, Cyprus, Malta, Turkey, Greece</div>
+      </div>
+      <span class="card-chevron">›</span>
+    </div>
+    <div class="card" data-track-name="destination" data-track-value="aus-nz" onclick="selectDestination('aus-nz')">
+      <div class="card-content"><div class="card-title">Australia &amp; New Zealand</div></div>
+      <span class="card-chevron">›</span>
+    </div>
+    <div class="card" data-track-name="destination" data-track-value="worldwide-inc" onclick="selectDestination('worldwide-inc')">
+      <div class="card-content">
+        <div class="card-title">Worldwide <em>including</em></div>
+        <div class="card-subtitle">USA, Canada, Mexico and Caribbean</div>
+      </div>
+      <span class="card-chevron">›</span>
+    </div>
+    <div class="card" data-track-name="destination" data-track-value="worldwide-exc" onclick="selectDestination('worldwide-exc')">
+      <div class="card-content">
+        <div class="card-title">Worldwide <em>excluding</em></div>
+        <div class="card-subtitle">USA, Canada, Mexico and Caribbean</div>
+      </div>
+      <span class="card-chevron">›</span>
+    </div>
+  </section>
+
+  <!-- ===== STEP 3: CRUISE ===== -->
+  <section class="step" id="step-cruise">
+    <h2 class="step-title">Going on a cruise?</h2>
+    <div class="cards-row">
+      <div class="card-yn" data-track-name="cruise" data-track-value="no" onclick="selectCruise(false)">
+        <div class="yn-title">No <span class="yn-chevron">›</span></div>
+        <div class="yn-subtitle">Cruise cover not required</div>
+      </div>
+      <div class="card-yn" data-track-name="cruise" data-track-value="yes" onclick="selectCruise(true)">
+        <div class="yn-title">Yes <span class="yn-chevron">›</span></div>
+        <div class="yn-subtitle">Add Cruise Cover</div>
+      </div>
+    </div>
+    <p class="step-desc">From missed ports to cabin confinement — our cruise cover helps with the extras.</p>
+  </section>
+
+  <!-- ===== STEP 4: CANCELLATION ===== -->
+  <section class="step" id="step-cancellation">
+    <h2 class="step-title">Cancellation cover</h2>
+    <button class="amount-btn" data-track-name="cancellation" data-track-value="500"   onclick="selectCancellation(500)"><strong>£500</strong> per person</button>
+    <button class="amount-btn" data-track-name="cancellation" data-track-value="1000"  onclick="selectCancellation(1000)"><strong>£1,000</strong> per person</button>
+    <button class="amount-btn" data-track-name="cancellation" data-track-value="2500"  onclick="selectCancellation(2500)"><strong>£2,500</strong> per person</button>
+    <button class="amount-btn" data-track-name="cancellation" data-track-value="5000"  onclick="selectCancellation(5000)"><strong>£5,000</strong> per person</button>
+    <button class="amount-btn" data-track-name="cancellation" data-track-value="6000"  onclick="selectCancellation(6000)"><strong>£6,000</strong> per person</button>
+    <button class="amount-btn" data-track-name="cancellation" data-track-value="7000"  onclick="selectCancellation(7000)"><strong>£7,000</strong> per person</button>
+    <button class="amount-btn" data-track-name="cancellation" data-track-value="8000"  onclick="selectCancellation(8000)"><strong>£8,000</strong> per person</button>
+    <button class="amount-btn" data-track-name="cancellation" data-track-value="9000"  onclick="selectCancellation(9000)"><strong>£9,000</strong> per person</button>
+    <button class="amount-btn" data-track-name="cancellation" data-track-value="10000" onclick="selectCancellation(10000)"><strong>£10,000</strong> per person</button>
+    <button class="amount-btn" data-track-name="cancellation" data-track-value="10001" onclick="selectCancellation(10001)"><strong>£10,000+</strong> per person</button>
+  </section>
+
+  <!-- ===== STEP 5: HOLIDAY START ===== -->
+  <!-- Calendar buttons rendered dynamically — track-name built in JS template literals -->
+  <section class="step" id="step-holiday-start">
+    <h2 class="step-title">Holiday starts</h2>
+    <div class="calendar" id="calStart"></div>
+    <div id="calStartNote" class="cal-note"></div>
+    <!-- continue-btn has no id — data-track-name on the inline click is fired via tracker.inline() in confirmHolidayStart() -->
+    <button class="continue-btn" id="btnStartContinue" onclick="confirmHolidayStart()" disabled>
+      <div class="btn-text">
+        <span class="btn-label">Continue</span>
+        <span class="btn-detail" id="btnStartDate">Select a date</span>
+      </div>
+      <span class="btn-chevron">›</span>
+    </button>
+  </section>
+
+  <!-- ===== STEP 6: HOLIDAY END ===== -->
+  <section class="step" id="step-holiday-end">
+    <h2 class="step-title">Holiday ends</h2>
+    <div class="calendar" id="calEnd"></div>
+    <button class="continue-btn" id="btnEndContinue" onclick="confirmHolidayEnd()" disabled>
+      <div class="btn-text">
+        <span class="btn-label">Continue</span>
+        <span class="btn-detail" id="btnEndDate">Select a date</span>
+      </div>
+      <span class="btn-chevron">›</span>
+    </button>
+  </section>
+
+  <!-- ===== STEP 7: TRAVELLERS ===== -->
+  <section class="step" id="step-travellers">
+    <h2 class="step-title">Travellers</h2>
+    <div class="number-grid">
+      <button class="number-btn" data-track-name="party_size" data-track-value="1" onclick="selectTravellers(1)">1</button>
+      <button class="number-btn" data-track-name="party_size" data-track-value="2" onclick="selectTravellers(2)">2</button>
+      <button class="number-btn" data-track-name="party_size" data-track-value="3" onclick="selectTravellers(3)">3</button>
+      <button class="number-btn" data-track-name="party_size" data-track-value="4" onclick="selectTravellers(4)">4</button>
+      <button class="number-btn" data-track-name="party_size" data-track-value="5" onclick="selectTravellers(5)">5</button>
+      <button class="number-btn" data-track-name="party_size" data-track-value="6" onclick="selectTravellers(6)">6</button>
+      <button class="number-btn" data-track-name="party_size" data-track-value="7" onclick="selectTravellers(7)">7</button>
+      <button class="number-btn" data-track-name="party_size" data-track-value="8" onclick="selectTravellers(8)">8</button>
+      <button class="number-btn" data-track-name="party_size" data-track-value="9" onclick="selectTravellers(9)">9</button>
+    </div>
+  </section>
+
+  <!-- ===== STEP 8: RELATIONSHIP ===== -->
+  <section class="step" id="step-relationship">
+    <h2 class="step-title">Relationship</h2>
+    <div class="card" data-track-name="relationship" data-track-value="couple" onclick="selectRelationship('couple')">
+      <div class="card-content">
+        <div class="card-title">Couple</div>
+        <div class="card-subtitle">Two adults living together.</div>
+      </div>
+      <span class="card-chevron">›</span>
+    </div>
+    <div class="card" data-track-name="relationship" data-track-value="family" onclick="selectRelationship('family')">
+      <div class="card-content">
+        <div class="card-title">Family</div>
+        <div class="card-subtitle">Parents and up to five children aged 17 or under.</div>
+      </div>
+      <span class="card-chevron">›</span>
+    </div>
+    <div class="card" data-track-name="relationship" data-track-value="group" onclick="selectRelationship('group')">
+      <div class="card-content">
+        <div class="card-title">Group</div>
+        <div class="card-subtitle">Anyone travelling together.</div>
+      </div>
+      <span class="card-chevron">›</span>
+    </div>
+  </section>
+
+  <!-- ===== STEP 9: TRAVELLER DETAILS (dynamic — reused for each traveller) ===== -->
+  <!-- Fields have IDs (needed for JS reads) → in untracked_inputs                 -->
+  <!-- Tracked explicitly at submit time via tracker.inline() in confirmTraveller() -->
+  <section class="step" id="step-traveller">
+    <h2 class="step-title" id="travellerHeading">Traveller</h2>
+
+    <div class="form-group">
+      <label class="form-field" id="fieldTitle">
+        <span class="field-label">Title</span>
+        <select id="travellerTitle" onchange="clearFieldError('title'); updateTravellerContinue()">
+          <option value="">Select</option>
+          <option value="Mr">Mr</option>
+          <option value="Mrs">Mrs</option>
+          <option value="Ms">Ms</option>
+          <option value="Miss">Miss</option>
+          <option value="Mstr">Master</option>
+        </select>
+        <span class="select-arrow">▾</span>
+      </label>
+      <p class="field-error" id="errTitle"></p>
+    </div>
+    <div class="form-group">
+      <label class="form-field" id="fieldFirstName">
+        <span class="field-label">First Name</span>
+        <input type="text" id="travellerFirstName" oninput="clearFieldError('firstName'); updateTravellerContinue()" autocomplete="given-name">
+      </label>
+      <p class="field-error" id="errFirstName"></p>
+    </div>
+    <div class="form-group">
+      <label class="form-field" id="fieldLastName">
+        <span class="field-label">Last Name</span>
+        <input type="text" id="travellerLastName" oninput="clearFieldError('lastName'); updateTravellerContinue()" autocomplete="family-name">
+      </label>
+      <p class="field-error" id="errLastName"></p>
+    </div>
+    <div class="form-group">
+      <label class="form-field" id="fieldDob">
+        <span class="field-label">Date of birth</span>
+        <input type="text" id="travellerDob" placeholder="DD / MM / YYYY" oninput="formatDob(this); clearFieldError('dob'); updateTravellerContinue()" inputmode="numeric" maxlength="14">
+      </label>
+      <p class="field-error" id="errDob"></p>
+    </div>
+
+    <p class="info-msg" id="travellerUnderAgeMsg" style="display:none;">Since this person is under 18, a parent or guardian will need to make the booking.</p>
+    <p class="validation-msg" id="travellerValidation"></p>
+
+    <button class="continue-btn" id="btnTravellerContinue" onclick="confirmTraveller()" disabled>
+      <div class="btn-text">
+        <span class="btn-label">Continue</span>
+        <span class="btn-detail" id="btnTravellerDetail">Fill in all fields</span>
+      </div>
+      <span class="btn-chevron">›</span>
+    </button>
+  </section>
+
+  <!-- ===== STEP 10: EMAIL ===== -->
+  <!-- emailInput has an id (needed for JS) → in untracked_inputs                 -->
+  <!-- Send/skip buttons have no id → data-track-name auto-captured on click       -->
+  <section class="step" id="step-email">
+    <h2 class="step-title">Send me a copy of my quote to</h2>
+    <div class="email-row">
+      <label class="form-field">
+        <span class="field-label">Email</span>
+        <input type="email" id="emailInput" oninput="updateEmailContinue()" autocomplete="email">
+      </label>
+      <button class="email-send"
+              data-track-name="email-q2-send"
+              onclick="confirmEmail()">»</button>
+    </div>
+    <button class="email-skip"
+            data-track-name="email-q2-skip"
+            onclick="confirmEmail()">Skip this step</button>
+  </section>
+
+  <!-- ===== STEP 11: ELIGIBILITY ===== -->
+  <section class="step" id="step-eligibility">
+    <h2 class="step-title">Eligibility Criteria</h2>
+    <div class="eligibility-section">
+      <div class="eligibility-heading">You must</div>
+      <p class="eligibility-text">Live in the UK, Channel Islands or Isle of Man and have lived there for at least 6 of the last 12 months</p>
+      <p class="eligibility-text">Be registered with a General Practitioner in that location</p>
+      <p class="eligibility-text">Start and end your trip in the UK</p>
+      <p class="eligibility-text">Be in the UK when you buy your policy</p>
+    </div>
+    <div class="eligibility-section">
+      <div class="eligibility-heading" style="color:var(--purple)">When cover doesn't apply:</div>
+      <p class="eligibility-text">If you travel against the latest FCDO travel advice</p>
+      <p class="eligibility-text">If buying insurance with the intention of making a claim</p>
+      <p class="eligibility-text">If you are already aware of something that's likely to lead to a claim</p>
+      <p class="eligibility-text">If you are travelling against medical advice</p>
+    </div>
+    <!-- No id — data-track-name auto-captured -->
+    <button class="continue-btn"
+            data-track-name="eligibility-q1-agree"
+            onclick="agreeEligibility()">
+      <div class="btn-text">
+        <span class="btn-label">Agree and continue</span>
+        <span class="btn-detail">I have read the above criteria</span>
+      </div>
+      <span class="btn-chevron">›</span>
+    </button>
+  </section>
+
+  <!-- ===== STEP 12: MEDICAL Q1 ===== -->
+  <section class="step" id="step-medical-1">
+    <p class="step-label">Medical question 1 of 4</p>
+    <h2 class="step-title">Is anyone travelling</h2>
+    <div class="medical-body">
+      <p>Currently undergoing or awaiting surgery, a procedure, hospital treatment, dialysis or cancer treatment</p>
+      <p>Awaiting tests, test results or investigations for a diagnosed condition</p>
+      <p>Diagnosed with a terminal illness</p>
+      <p>Currently undergoing or previously received treatment for alcohol or drug addiction within the last five years</p>
+    </div>
+    <div class="cards-row mt-16">
+      <div class="card-yn" data-track-name="medical_q1" data-track-value="no" onclick="answerMedical('surgeryTreatment', false)">
+        <div class="yn-title">No <span class="yn-chevron">›</span></div>
+        <div class="yn-subtitle">None of these apply</div>
+      </div>
+      <div class="card-yn" data-track-name="medical_q1" data-track-value="yes" onclick="answerMedical('surgeryTreatment', true)">
+        <div class="yn-title">Yes <span class="yn-chevron">›</span></div>
+        <div class="yn-subtitle">Applies to someone</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== MEDICAL HARD STOP ===== -->
+  <section class="step" id="step-medical-hardstop">
+    <h2 class="step-title">Sorry, we're unable to provide a quote on this occasion</h2>
+    <div class="hardstop-box">
+      <p>Holiday Extras are unable to provide a quote on this occasion.</p>
+      <p>Please use the Money Helper directory to find other travel insurance providers.</p>
+      <p><strong>Money Helper:</strong></p>
+      <ul>
+        <li><strong>Phone</strong> — 0800 138 7777, Mon–Fri 8am–6pm</li>
+        <li><strong>Online</strong> — traveldirectory.moneyhelper.org.uk</li>
+      </ul>
+    </div>
+    <button class="back-btn" onclick="goBack()">← Go back</button>
+  </section>
+
+  <!-- ===== STEP 13: MEDICAL Q2 ===== -->
+  <section class="step" id="step-medical-2">
+    <p class="step-label">Medical question 2 of 4</p>
+    <h2 class="step-title">Is anyone travelling</h2>
+    <div class="medical-body">
+      <p>Currently experiencing symptoms that have not yet been diagnosed?</p>
+    </div>
+    <div class="cards-row mt-16">
+      <div class="card-yn" data-track-name="medical_q2" data-track-value="no" onclick="answerMedical('undiagnosedSymptoms', false)">
+        <div class="yn-title">No <span class="yn-chevron">›</span></div>
+        <div class="yn-subtitle">Doesn't apply to anyone</div>
+      </div>
+      <div class="card-yn" data-track-name="medical_q2" data-track-value="yes" onclick="undiagnosedYes()">
+        <div class="yn-title">Yes <span class="yn-chevron">›</span></div>
+        <div class="yn-subtitle">Applies to someone</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== STEP 13A: MEDICAL Q2A ===== -->
+  <section class="step" id="step-medical-2a">
+    <h2 class="step-title">Please note the following undiagnosed exclusions</h2>
+    <div class="medical-body">
+      <p>Your policy won't cover any conditions and/or symptoms that haven't been diagnosed if you need to cancel your trip, cut it short, or make an emergency medical claim.</p>
+      <p>You won't be covered while your symptoms are being investigated.</p>
+    </div>
+    <!-- No id — data-track-name auto-captured -->
+    <div class="card-yn" style="margin-top:16px;"
+         data-track-name="medical_q2a"
+         data-track-value="understood"
+         onclick="navigateTo('medical-3')">
+      <div class="yn-title">Understood <span class="yn-chevron">›</span></div>
+      <div class="yn-subtitle">Continue with my quote</div>
+    </div>
+  </section>
+
+  <!-- ===== STEP 14: MEDICAL Q3 ===== -->
+  <section class="step" id="step-medical-3">
+    <p class="step-label">Medical question 3 of 4</p>
+    <h2 class="step-title">Has any traveller ever had any of the following conditions?</h2>
+    <div class="medical-body">
+      <h4>Heart or circulation conditions</h4>
+      <p>Heart attack, angina, high blood pressure, blood clots, raised cholesterol, aneurysm.</p>
+      <h4>Brain or nervous system conditions</h4>
+      <p>Stroke, mini-stroke (TIA), or brain haemorrhage.</p>
+      <h4>Breathing conditions</h4>
+      <p>Any lung or respiratory condition (excluding stable, well-controlled asthma).</p>
+      <h4>Digestive system conditions</h4>
+      <p>Gallstones, diverticulitis, IBS or Crohn's disease.</p>
+      <h4>Cancer</h4>
+      <p>Any form of cancer, whether in remission or not.</p>
+    </div>
+    <div class="cards-row mt-16">
+      <div class="card-yn" data-track-name="medical_q3" data-track-value="no" onclick="answerMedical('listedConditions', false)">
+        <div class="yn-title">No <span class="yn-chevron">›</span></div>
+        <div class="yn-subtitle">None of these apply</div>
+      </div>
+      <div class="card-yn" data-track-name="medical_q3" data-track-value="yes" onclick="answerMedical('listedConditions', true)">
+        <div class="yn-title">Yes <span class="yn-chevron">›</span></div>
+        <div class="yn-subtitle">Applies to someone</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== STEP 15: MEDICAL Q4 ===== -->
+  <section class="step" id="step-medical-4">
+    <p class="step-label">Medical question 4 of 4</p>
+    <h2 class="step-title">Recent physical or psychological conditions</h2>
+    <div class="medical-body">
+      <p>In the last two years, has anyone travelling had any physical or psychological conditions that required treatment, consultations, investigations or medication?</p>
+    </div>
+    <div class="cards-row mt-16">
+      <div class="card-yn" data-track-name="medical_q4" data-track-value="no" onclick="answerMedical('recentConditions', false)">
+        <div class="yn-title">No <span class="yn-chevron">›</span></div>
+        <div class="yn-subtitle">None of these apply</div>
+      </div>
+      <div class="card-yn" data-track-name="medical_q4" data-track-value="yes" onclick="answerMedical('recentConditions', true)">
+        <div class="yn-title">Yes <span class="yn-chevron">›</span></div>
+        <div class="yn-subtitle">Applies to someone</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== STEP 16: SUMMARY ===== -->
+  <section class="step" id="step-summary">
+    <h2 class="step-title">Your quote summary</h2>
+    <div id="summaryContent"></div>
+    <!-- No id — data-track-name auto-captured -->
+    <button class="continue-btn"
+            data-track-name="summary-q1-submit"
+            onclick="submitQuote()">
+      <div class="btn-text">
+        <span class="btn-label">Get my quote</span>
+        <span class="btn-detail">Submit to see your price</span>
+      </div>
+      <span class="btn-chevron">›</span>
+    </button>
+  </section>
+
+  <!-- ===== STEP 17: RESULTS ===== -->
+  <section class="step" id="step-results">
+    <div id="resultsLoading" class="results-loading">
+      <div class="spinner"></div>
+      <p>Submitting your details…</p>
+    </div>
+    <div id="resultsError" class="results-error" style="display:none;"></div>
+    <div id="resultsSuccess" style="display:none;">
+      <h2 class="step-title">Quote submitted</h2>
+      <div style="background:var(--purple-light);border-radius:12px;padding:20px;margin-bottom:20px;">
+        <p style="font-size:16px;font-weight:600;color:var(--purple);margin-bottom:6px;">Your details have been sent</p>
+        <p style="font-size:15px;color:#555;">Click below to continue your buying journey.</p>
+      </div>
+      <a id="redirectLink" href="#" target="_blank" rel="noopener" style="display:block;text-decoration:none;margin-bottom:12px;">
+        <div style="background:var(--purple);color:#fff;border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <span style="font-size:16px;font-weight:700;display:block;">Continue to quotes</span>
+            <span id="redirectUrl" style="font-size:14px;opacity:0.85;display:block;margin-top:2px;"></span>
+          </div>
+          <span style="font-size:22px;">›</span>
+        </div>
+      </a>
+      <div class="summary-section-title">API Payload (test harness)</div>
+      <pre id="payloadDebug" style="background:#f5f5f7;border:1px solid var(--grey-light);border-radius:8px;padding:12px;font-family:monospace;font-size:12px;white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto;color:#333;line-height:1.5;"></pre>
+      <button class="back-btn" onclick="navigateTo('summary')">← Back to summary</button>
+    </div>
+  </section>
+
+</div><!-- /app -->
+</main>
+
+<!-- ===== DEBUG PANEL ===== -->
+<div class="debug-panel" id="debugPanel">
+  <div class="debug-header" onclick="toggleDebug()">
+    <span>Orion Event Log</span>
+    <span style="display:flex;gap:8px;align-items:center;font-size:10px;">
+      <span class="m-page">[page]</span>
+      <span class="m-track">[track]</span>
+      <span class="m-inline">[inline]</span>
+      <span class="m-autocapture">[auto]</span>
+      <span class="m-error">[error]</span>
+      <span class="m-init">[init]</span>
+      <span class="debug-badge" id="eventCount">0</span>
+    </span>
+  </div>
+  <div class="debug-body" id="debugBody">
+    <div style="padding:8px;color:#888;font-size:11px;">Waiting for tracker…</div>
+  </div>
+</div>
+
+<!-- ===== ERROR TEST CARD ===== -->
+<div class="error-card" id="errorCard">
+  <div class="error-card-header" onclick="toggleErrorCard()">
+    <span>Client Error Tests</span>
+    <span style="color:#e0d1ff;font-size:11px;font-family:monospace;">▲ hide</span>
+  </div>
+  <div class="error-card-body" id="errorCardBody">
+    <button class="err-btn" style="background:#c62828;" onclick="fireCaughtError()">Caught app error</button>
+    <button class="err-btn" style="background:#880e4f;" onclick="fireApiError()">API / supplier error</button>
+    <button class="err-btn" style="background:#4a148c;" onclick="fireQuoteSubmitError()">Quote submit error</button>
+    <button class="err-btn" style="background:#37474f;" onclick="fireUncaughtError()">Uncaught JS exception</button>
+    <button class="err-btn" style="background:#37474f;" onclick="fireUnhandledRejection()">Unhandled rejection</button>
+    <button class="err-btn" style="background:#1b5e20;" onclick="window._calcStruggleScore && window._calcStruggleScore()">Fire struggle score</button>
+  </div>
+</div>
+
+<!-- ===================================================================
+     WIZARD JAVASCRIPT
+     Mirrors the logic from the live insurance-wizard page exactly,
+     with test-harness additions noted inline.
+=================================================================== -->
+<script>
+// ─── Schema constants (from Orion Tracking Requirements doc) ─────────────────
+// Use these to validate page_system / page_type / page_product_type values
+// before they are sent. assertSchema() warns in the console for unknown values.
+const SCHEMA = {
+  PAGE_SYSTEM: ['landing','search','availability','payment','post_booking','heha',
+                'information','manage_booking','collection','account','messaging'],
+  PAGE_TYPE:   ['landing','search_form','search_results','categories_search_results',
+                'home','addon_results','heha_results','product_info','extra_details',
+                'view_bookings','booking_actions','trip_details','email_collection',
+                'your_trips','booking_details','filtered_results',
+                'payment_detail_collection','payment_detail_confirm','initialise',
+                'account_login','just_booked','account','trip_display',
+                'account_login_otp_only','customer_authentication_otp_only',
+                'amend_booking','post_booking_view','view_booking','checkout_new_user',
+                'checkout_authenticated','cancel_booking','trip_results','support',
+                'screening','edit_trip_details','payment_authentication',
+                'account_login_password_only','payment_settle','account_create',
+                'customer_authentication_password_only','up_sell','account_create_details',
+                'checkout','checkout_recognised','payment_amend_increase',
+                'payment_amend_decrease','payment_apm_payment','weather','flights',
+                'account_verify','account_update_password','information_feedback_form',
+                'upgrade_booking','delete','customer_authentication','trip_planner',
+                'memories','search_form','outbound_flight_date_entry','flight_departs',
+                'preferences','trip_edit_new','trip_edit_existing','product_intent',
+                'undefined','inbox','information_feedback','landing_page','game',
+                'outbound_airport_entry','outbound_arrival_airport_entry',
+                'payment_detail_collect','show_options','product_detail',
+                'inbound_flight_date_entry','seat_results','inbound_flight_time_entry',
+                'outbound_flight_time_entry','traveller_entry','resort_address_entry',
+                'travellers'],
+  PAGE_PRODUCT_TYPE: ['carpark','hotel_with_parking','lounge','insurance','hotel',
+                      'resort_transfer','ticket_and_room','car_hire','fast_track',
+                      'impaired_insurance','theatre_and_room','attraction_ticket']
+};
+
+function assertSchema(dimension, value) {
+  if (value && !SCHEMA[dimension].includes(value)) {
+    console.warn(`[tracker schema] "${value}" is not a valid ${dimension}. Check SCHEMA.${dimension} for allowed values.`);
+  }
+}
+
+// ─── Standardised error payload builder ──────────────────────────────────────
+// Implements the error schema from the Orion Tracking Requirements doc.
+// level:            fatal (system down) | error (blocks user) | warn (unexpected but functional) | info
+// error_type:       client | server
+// customer_facing:  did the user see an error state?
+// recoverable:      can the user self-resolve without intervention?
+function buildError({ level = 'error', error_type = 'client', error_code, error_message,
+                      component = 'insurance-wizard', customer_facing = true,
+                      recoverable = true, extra = {} } = {}) {
+  return {
+    level,
+    error_type,
+    error_code,
+    error_message,
+    page_path:       window.location.hash || '/',
+    component,
+    customer_facing,
+    recoverable,
+    ...extra
+  };
+}
+
+// ─── Wizard state ────────────────────────────────────────────────────────────
+let wizardState = {
+  tripType: null, destination: null, cruise: null,
+  cancellationCover: null, holidayStart: null, holidayEnd: null,
+  travellerCount: null, relationship: null,
+  travellers: [],
+  email: null, eligibilityAgreed: false,
+  medical: { surgeryTreatment: null, undiagnosedSymptoms: null, listedConditions: null, recentConditions: null }
+};
+let currentTravellerIndex = 0;
+
+// ─── Step order ──────────────────────────────────────────────────────────────
+const BASE_STEPS = [
+  'trip-type','destination','cruise','cancellation',
+  'holiday-start','holiday-end','travellers','relationship',
+  'traveller','email','eligibility',
+  'medical-1','medical-2','medical-2a','medical-3','medical-4',
+  'summary','results'
+];
+
+function getSteps() {
+  let s = [...BASE_STEPS];
+  if (wizardState.tripType === 'annual') s = s.filter(x => x !== 'holiday-end');
+  if (wizardState.travellerCount === 1)  s = s.filter(x => x !== 'relationship');
+  return s;
+}
+
+function getStepIndex(hash) {
+  const s = getSteps();
+  if (hash && hash.startsWith('traveller-')) return s.indexOf('traveller');
+  return s.indexOf(hash || 'trip-type');
+}
+
+function getProgress(hash) {
+  const s = getSteps(), idx = getStepIndex(hash);
+  if (idx <= 0) return 0;
+  return Math.round((idx / (s.length - 1)) * 100);
+}
+
+// ─── Navigation ──────────────────────────────────────────────────────────────
+function navigateTo(hash) { window.location.hash = hash; }
+
+function goBack() {
+  const hash = window.location.hash.slice(1) || 'trip-type';
+  if (hash.startsWith('traveller-')) {
+    const n = parseInt(hash.split('-')[1]);
+    if (n > 1) { navigateTo('traveller-' + (n - 1)); return; }
+  }
+  const idx = getStepIndex(hash);
+  if (idx > 0) navigateTo(getSteps()[idx - 1]);
+}
+
+// ─── Stage registry — single source of truth (integration guide §Stage Registry)
+// All wizard implementations read from here. Stage numbers are fixed regardless
+// of which branches a user takes — stages that are skipped still count toward
+// the total. wizard_stage_total must equal the highest num in this table.
+const STAGES = {
+  'trip-type':    { num: 1,  label: 'cover_type'    },
+  'destination':  { num: 2,  label: 'destination'   },
+  'cruise':       { num: 3,  label: 'cruise'         },
+  'cancellation': { num: 4,  label: 'cancellation'  },
+  'holiday-start':{ num: 5,  label: 'cover_start'   },
+  'holiday-end':  { num: 6,  label: 'cover_end'     },
+  'travellers':   { num: 7,  label: 'party_size'    },
+  'relationship': { num: 8,  label: 'relationship'  },
+  // traveller-N: num 9, label 'traveller_details' — handled dynamically below
+  'email':        { num: 10, label: 'email'          },
+  'eligibility':  { num: 11, label: 'eligibility'   },
+  'medical-1':    { num: 12, label: 'medical_q1'    },
+  'medical-2':    { num: 13, label: 'medical_q2'    },
+  'medical-2a':   { num: 14, label: 'medical_q2a'   },
+  'medical-3':    { num: 15, label: 'medical_q3'    },
+  'medical-4':    { num: 16, label: 'medical_q4'    },
+  'summary':      { num: 17, label: 'summary'       },
+  'results':      { num: 18, label: 'results'       }
+};
+const TOTAL_STAGES = 18;   // longest possible journey including all conditional branches
+
+// Visited flags — prevent stage auto-capture from re-firing on back-navigation
+const visitedStages = new Set();
+let stageTotalFired  = false;
+
+function showStep(hash) {
+  const backBtn = document.getElementById('btnBack');
+  backBtn.classList.toggle('hidden', getStepIndex(hash) <= 0);
+
+  document.getElementById('progressFill').style.width = getProgress(hash) + '%';
+
+  document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+  let activeId = 'step-' + hash;
+  if (hash.startsWith('traveller-')) {
+    currentTravellerIndex = parseInt(hash.split('-')[1]) - 1;
+    activeId = 'step-traveller';
+    setupTravellerForm();
+  }
+  const el = document.getElementById(activeId);
+  if (el) el.classList.add('active');
+
+  if (hash === 'holiday-start') renderCalendar('start');
+  if (hash === 'holiday-end')   renderCalendar('end');
+  if (hash === 'email')         setupEmailForm();
+  if (hash === 'summary')       renderSummary();
+
+  // ── tracker.page() on every stage transition ─────────────────────────────────
+  // page_type = stage_{N} carries stage identity on every event fired on this
+  // stage (load, click, capture, focus) — no joining needed to get stage context.
+  // Fires unconditionally on every stage navigation including back-navigation.
+  let stageInfo = STAGES[hash];
+  if (!stageInfo && hash.startsWith('traveller-')) {
+    stageInfo = { num: 9, label: 'traveller_details' };
+  }
+  if (stageInfo) {
+    const pageType = `stage_${stageInfo.num}`;
+    logDebug('page', `wizard_search_form:${pageType}`, { page_type: pageType, page_product_type: 'insurance' });
+    if (window.tracker) tracker.page('landing', { page_type: pageType, page_product_type: 'insurance' });
+
+    // ── Stage name auto-capture — fires once per stage per session ──────────
+    // Visited flag prevents re-firing on back-navigation or re-renders.
+    // action_object.name matches page_type so the stage map needs no join.
+    if (!visitedStages.has(stageInfo.num)) {
+      const acPayload = { name: pageType, value: stageInfo.label };
+      logDebug('inline', `auto_capture:${pageType}`, acPayload);
+      if (window.tracker) tracker.inline('auto_capture', acPayload);
+      visitedStages.add(stageInfo.num);
+
+      // ── wizard_stage_total — fires once at stage 1 only ──────────────────
+      if (stageInfo.num === 1 && !stageTotalFired) {
+        const totalPayload = { name: 'wizard_stage_total', value: TOTAL_STAGES };
+        logDebug('inline', 'auto_capture:wizard_stage_total', totalPayload);
+        if (window.tracker) tracker.inline('auto_capture', totalPayload);
+        stageTotalFired = true;
+      }
+    }
+  }
+}
+
+window.addEventListener('hashchange', () => showStep(window.location.hash.slice(1)));
+
+// ─── Step handlers ───────────────────────────────────────────────────────────
+function selectTripType(type)    { wizardState.tripType = type;                navigateTo('destination'); }
+function selectDestination(dest) { wizardState.destination = dest;             navigateTo('cruise'); }
+function selectCruise(val)       { wizardState.cruise = val;                   navigateTo('cancellation'); }
+function selectCancellation(amt) { wizardState.cancellationCover = amt;        navigateTo('holiday-start'); }
+function selectRelationship(rel) { wizardState.relationship = rel;             navigateTo('traveller-1'); }
+
+function selectTravellers(count) {
+  wizardState.travellerCount = count;
+  while (wizardState.travellers.length < count)
+    wizardState.travellers.push({ title:'', firstName:'', lastName:'', dob:'' });
+  wizardState.travellers.length = count;
+  navigateTo(count === 1 ? 'traveller-1' : 'relationship');
+}
+
+// ─── Calendar ────────────────────────────────────────────────────────────────
+const calState = {
+  start: { year: null, month: null, day: null },
+  end:   { year: null, month: null, day: null }
+};
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS   = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+
+function toDateParam(d) {
+  if (!d) return '';
+  return `${d.year}-${String(d.month+1).padStart(2,'0')}-${String(d.day).padStart(2,'0')}`;
+}
+
+function formatDate(d) {
+  if (!d || !d.day) return '';
+  return `${String(d.day).padStart(2,'0')} ${MONTHS[d.month]} ${d.year}`;
+}
+
+function renderCalendar(type) {
+  const c = calState[type];
+  const now = new Date();
+  const trackStage = type === 'start' ? 'cover_start' : 'cover_end';
+  const containerId = type === 'start' ? 'calStart' : 'calEnd';
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const years = [now.getFullYear(), now.getFullYear()+1, now.getFullYear()+2];
+
+  let html = '';
+
+  // ── Year — data-track-name set via template literal (dynamic element, no id) ──
+  html += `<div class="cal-section"><div class="cal-label">Year</div><div class="cal-year-grid">`;
+  years.forEach(y => {
+    const sel = c.year === y ? ' selected' : '';
+    html += `<button class="cal-btn${sel}"
+      data-track-name="${trackStage}-q1-year"
+      data-track-value="${y}"
+      onclick="setCalYear('${type}',${y})">${y}</button>`;
+  });
+  html += `</div></div>`;
+
+  if (c.year !== null) {
+    // ── Month ──
+    html += `<div class="cal-section"><div class="cal-label">Month</div><div class="cal-month-grid">`;
+    MONTHS.forEach((m, i) => {
+      const sel = c.month === i ? ' selected' : '';
+      html += `<button class="cal-btn${sel}"
+        data-track-name="${trackStage}-q2-month"
+        data-track-value="${String(i+1).padStart(2,'0')}"
+        onclick="setCalMonth('${type}',${i})">${m}</button>`;
+    });
+    html += `</div></div>`;
+  }
+
+  if (c.year !== null && c.month !== null) {
+    // ── Day grid ──
+    const firstDay = new Date(c.year, c.month, 1).getDay(); // 0=Sun
+    const daysInMonth = new Date(c.year, c.month+1, 0).getDate();
+    const offset = (firstDay + 6) % 7; // Mon-start
+
+    html += `<div class="cal-section"><div class="cal-label">Day</div>`;
+    html += `<div class="cal-day-grid">`;
+    DAYS.forEach(d => { html += `<div class="cal-day-header">${d}</div>`; });
+    for (let i = 0; i < offset; i++) html += `<div class="cal-day empty"></div>`;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const isPast = new Date(c.year, c.month, d) < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const isSel  = c.day === d ? ' selected' : '';
+      const cls    = `cal-day${isPast ? ' past' : ''}${isSel}`;
+      if (isPast) {
+        html += `<div class="${cls}">${d}</div>`;
+      } else {
+        html += `<div class="${cls}"
+          data-track-name="${trackStage}-q3-day"
+          data-track-value="${d}"
+          onclick="selectCalDay('${type}',${d})">${d}</div>`;
+      }
+    }
+    html += `</div></div>`;
+  }
+
+  container.innerHTML = html;
+  updateCalContinue(type);
+}
+
+function setCalYear(type, y) {
+  calState[type].year = y; calState[type].month = null; calState[type].day = null;
+  renderCalendar(type);
+}
+function setCalMonth(type, m) {
+  calState[type].month = m; calState[type].day = null;
+  renderCalendar(type);
+}
+function selectCalDay(type, d) {
+  calState[type].day = d;
+  if (type === 'start') wizardState.holidayStart = { ...calState.start };
+  else                  wizardState.holidayEnd   = { ...calState.end };
+  renderCalendar(type);
+  updateCalContinue(type);
+}
+
+function updateCalContinue(type) {
+  const c = type === 'start' ? calState.start : calState.end;
+  const btn     = document.getElementById(type === 'start' ? 'btnStartContinue' : 'btnEndContinue');
+  const detail  = document.getElementById(type === 'start' ? 'btnStartDate'     : 'btnEndDate');
+  const hasDate = c.day !== null;
+  if (btn) btn.disabled = !hasDate;
+  if (detail) detail.textContent = hasDate ? formatDate(c) : 'Select a date';
+}
+
+function confirmHolidayStart() {
+  // tracker.inline() — dynamic value, mirrors the live site exactly
+  if (window.tracker) {
+    tracker.inline('click', {
+      name:  'cover_start-q4-continue',
+      value: toDateParam(wizardState.holidayStart) || ''
+    });
+    logDebug('inline', 'click', { name: 'cover_start-q4-continue', value: toDateParam(wizardState.holidayStart) });
+  }
+  wizardState.holidayEnd = null;
+  calState.end = { year: null, month: null, day: null };
+  navigateTo(wizardState.tripType === 'annual' ? 'travellers' : 'holiday-end');
+}
+
+function confirmHolidayEnd() {
+  if (window.tracker) {
+    tracker.inline('click', {
+      name:  'cover_end-q4-continue',
+      value: toDateParam(wizardState.holidayEnd) || ''
+    });
+    logDebug('inline', 'click', { name: 'cover_end-q4-continue', value: toDateParam(wizardState.holidayEnd) });
+  }
+  navigateTo('travellers');
+}
+
+// ─── Traveller form ───────────────────────────────────────────────────────────
+function setupTravellerForm() {
+  const total = wizardState.travellerCount;
+  document.getElementById('travellerHeading').textContent =
+    total > 1 ? `Traveller ${currentTravellerIndex + 1} of ${total}` : 'Traveller';
+  const t = wizardState.travellers[currentTravellerIndex] || {};
+  document.getElementById('travellerTitle').value     = t.title     || '';
+  document.getElementById('travellerFirstName').value = t.firstName || '';
+  document.getElementById('travellerLastName').value  = t.lastName  || '';
+  document.getElementById('travellerDob').value       = t.dob       || '';
+  clearAllFieldErrors();
+  updateTravellerContinue();
+}
+
+function formatDob(input) {
+  let v = input.value.replace(/[^\d]/g,'');
+  if (v.length > 8) v = v.slice(0,8);
+  let f = '';
+  if (v.length > 0) f += v.slice(0,2);
+  if (v.length > 2) f += ' / ' + v.slice(2,4);
+  if (v.length > 4) f += ' / ' + v.slice(4,8);
+  input.value = f;
+}
+
+// ─── Field error helpers ──────────────────────────────────────────────────────
+const FIELD_MAP = {
+  title:     { label: 'fieldTitle',     error: 'errTitle'     },
+  firstName: { label: 'fieldFirstName', error: 'errFirstName' },
+  lastName:  { label: 'fieldLastName',  error: 'errLastName'  },
+  dob:       { label: 'fieldDob',       error: 'errDob'       }
+};
+
+function setFieldError(field, message) {
+  const m = FIELD_MAP[field];
+  if (!m) return;
+  const label = document.getElementById(m.label);
+  const err   = document.getElementById(m.error);
+  if (label) label.classList.add('has-error');
+  if (err)   { err.textContent = message; err.classList.add('visible'); }
+}
+
+function clearFieldError(field) {
+  const m = FIELD_MAP[field];
+  if (!m) return;
+  const label = document.getElementById(m.label);
+  const err   = document.getElementById(m.error);
+  if (label) label.classList.remove('has-error');
+  if (err)   { err.textContent = ''; err.classList.remove('visible'); }
+}
+
+function clearAllFieldErrors() {
+  Object.keys(FIELD_MAP).forEach(clearFieldError);
+  const v = document.getElementById('travellerValidation');
+  if (v) v.textContent = '';
+}
+
+// ─── Validation rules ─────────────────────────────────────────────────────────
+// Returns an array of { field, code, message } objects — one per failing rule.
+// Each failure fires a separate tracker.error() so analysts see per-field friction.
+function validateTraveller(title, first, last, dob) {
+  const errors = [];
+  const NAME_RE = /^[a-zA-ZÀ-ÖØ-öø-ÿ''\-\s]{2,}$/; // letters, hyphens, apostrophes only
+  const DIGIT_RE = /\d/;
+
+  // Title
+  if (!title) {
+    errors.push({ field: 'title', code: 'validation-error-title', message: 'Please select a title.' });
+  }
+
+  // First name
+  if (!first) {
+    errors.push({ field: 'firstName', code: 'validation-error-firstname', message: 'First name is required.' });
+  } else if (DIGIT_RE.test(first)) {
+    errors.push({ field: 'firstName', code: 'validation-error-firstname', message: 'First name must not contain numbers.' });
+  } else if (!NAME_RE.test(first)) {
+    errors.push({ field: 'firstName', code: 'validation-error-firstname', message: 'First name contains invalid characters.' });
+  } else if (first.length < 2) {
+    errors.push({ field: 'firstName', code: 'validation-error-firstname', message: 'First name must be at least 2 characters.' });
+  }
+
+  // Last name
+  if (!last) {
+    errors.push({ field: 'lastName', code: 'validation-error-lastname', message: 'Last name is required.' });
+  } else if (DIGIT_RE.test(last)) {
+    errors.push({ field: 'lastName', code: 'validation-error-lastname', message: 'Last name must not contain numbers.' });
+  } else if (!NAME_RE.test(last)) {
+    errors.push({ field: 'lastName', code: 'validation-error-lastname', message: 'Last name contains invalid characters.' });
+  } else if (last.length < 2) {
+    errors.push({ field: 'lastName', code: 'validation-error-lastname', message: 'Last name must be at least 2 characters.' });
+  }
+
+  // Date of birth
+  const digits = dob.replace(/[^\d]/g, '');
+  if (digits.length !== 8) {
+    errors.push({ field: 'dob', code: 'validation-error-dob', message: 'Please enter a complete date of birth (DD / MM / YYYY).' });
+  } else {
+    const day   = parseInt(digits.slice(0, 2), 10);
+    const month = parseInt(digits.slice(2, 4), 10);
+    const year  = parseInt(digits.slice(4, 8), 10);
+    const date  = new Date(year, month - 1, day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const isRealDate = date.getFullYear() === year
+                    && date.getMonth()    === month - 1
+                    && date.getDate()     === day;
+
+    if (!isRealDate) {
+      errors.push({ field: 'dob', code: 'validation-error-dob', message: `${dob} is not a valid date.` });
+    } else if (date >= today) {
+      errors.push({ field: 'dob', code: 'validation-error-dob', message: 'Date of birth must be in the past.' });
+    } else {
+      let age = today.getFullYear() - year;
+      if (today.getMonth() < month - 1 || (today.getMonth() === month - 1 && today.getDate() < day)) age--;
+      if (age > 120) {
+        errors.push({ field: 'dob', code: 'validation-error-dob', message: 'Please check the year — date of birth must be within the last 120 years.' });
+      }
+    }
+  }
+
+  return errors;
+}
+
+function updateTravellerContinue() {
+  const title = document.getElementById('travellerTitle').value;
+  const first = document.getElementById('travellerFirstName').value.trim();
+  const last  = document.getElementById('travellerLastName').value.trim();
+  const dob   = document.getElementById('travellerDob').value;
+  const btn   = document.getElementById('btnTravellerContinue');
+  const detail= document.getElementById('btnTravellerDetail');
+  // Surface-level check only — enables the button so deep validation can run on submit
+  const hasContent = title && first && last && dob.replace(/[^\d]/g,'').length === 8;
+  if (btn) btn.disabled = !hasContent;
+  if (detail) detail.textContent = hasContent ? `${title} ${first} ${last}` : 'Fill in all fields';
+  document.getElementById('travellerUnderAgeMsg').style.display = 'none';
+}
+
+function confirmTraveller() {
+  const title = document.getElementById('travellerTitle').value;
+  const first = document.getElementById('travellerFirstName').value.trim();
+  const last  = document.getElementById('travellerLastName').value.trim();
+  const dob   = document.getElementById('travellerDob').value;
+  const n     = currentTravellerIndex + 1;
+
+  clearAllFieldErrors();
+
+  // ── Deep validation ───────────────────────────────────────────────────────
+  const errors = validateTraveller(title, first, last, dob);
+
+  if (errors.length > 0) {
+    // Show inline error on each failing field
+    errors.forEach(e => setFieldError(e.field, e.message));
+
+    // Fire one tracker.error() per failing field — level:warn because user can fix it
+    errors.forEach(e => {
+      const payload = buildError({
+        level:          'warn',
+        error_type:     'client',
+        error_code:     e.code,
+        error_message:  e.message,
+        component:      'traveller-form',
+        customer_facing: true,
+        recoverable:    true,
+        extra: { field: e.field, traveller_index: n }
+      });
+      if (window.tracker) tracker.error(payload);
+      logDebug('error', e.code, payload);
+    });
+
+    // Summary message below the form
+    const v = document.getElementById('travellerValidation');
+    if (v) v.textContent = errors.length === 1
+      ? errors[0].message
+      : `Please fix ${errors.length} errors above before continuing.`;
+
+    // Scroll first error into view
+    const firstErrEl = document.getElementById(FIELD_MAP[errors[0].field].label);
+    if (firstErrEl) firstErrEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return; // block navigation
+  }
+
+  // ── All valid — save and track ────────────────────────────────────────────
+  wizardState.travellers[currentTravellerIndex] = { title, firstName: first, lastName: last, dob };
+
+  // PII fields captured explicitly at submit time (integration guide §PII Handling)
+  if (window.tracker) {
+    const prefix = `traveller${n}`;
+    tracker.inline('capture', { name: prefix + '-q1-title',     value: title });
+    tracker.inline('capture', { name: prefix + '-q2-firstname', value: first });
+    tracker.inline('capture', { name: prefix + '-q3-lastname',  value: last  });
+    tracker.inline('capture', { name: prefix + '-q4-dob',       value: dob   });
+    tracker.inline('click',   { name: prefix + '-q5-continue',  value: `${title} ${first} ${last}` });
+    logDebug('inline', `traveller${n}-capture+continue`, { title, first, last, dob });
+  }
+
+  const next = currentTravellerIndex + 1;
+  navigateTo(next < wizardState.travellerCount ? `traveller-${next + 1}` : 'email');
+}
+
+// ─── Email ────────────────────────────────────────────────────────────────────
+function setupEmailForm() {
+  document.getElementById('emailInput').value = wizardState.email || '';
+}
+function updateEmailContinue() {}
+
+function confirmEmail() {
+  const email   = document.getElementById('emailInput').value.trim();
+  const emailEl = document.getElementById('emailInput');
+
+  // Email is optional (skip button exists) but if entered it must be valid
+  if (email) {
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!EMAIL_RE.test(email)) {
+      if (emailEl) emailEl.style.borderColor = '#e57373';
+      const payload = buildError({
+        level:          'warn',
+        error_type:     'client',
+        error_code:     'validation-error-email',
+        error_message:  'Invalid email address entered',
+        component:      'email-form',
+        customer_facing: true,
+        recoverable:    true,
+        extra: { entered_length: email.length, has_at: email.includes('@') }
+      });
+      if (window.tracker) tracker.error(payload);
+      logDebug('error', 'validation-error-email', payload);
+      return; // block navigation
+    }
+    if (emailEl) emailEl.style.borderColor = '';
+  }
+
+  wizardState.email = email || null;
+  // PII field captured explicitly at submit, not on keystroke (tracker-pr guide §PII Handling)
+  if (window.tracker && email) {
+    tracker.inline('capture', {
+      name:  'email-q1-email',
+      value: email
+    });
+    logDebug('inline', 'capture', { name: 'email-q1-email', value: email });
+  }
+  navigateTo('eligibility');
+}
+
+// ─── Medical ──────────────────────────────────────────────────────────────────
+function agreeEligibility() {
+  wizardState.eligibilityAgreed = true;
+  navigateTo('medical-1');
+}
+
+function answerMedical(field, val) {
+  wizardState.medical[field] = val;
+  const map = {
+    surgeryTreatment:    val ? 'medical-hardstop' : 'medical-2',
+    undiagnosedSymptoms: val ? 'medical-2a'       : 'medical-3',
+    listedConditions:    'medical-4',
+    recentConditions:    'summary'
+  };
+  navigateTo(map[field]);
+}
+
+function undiagnosedYes() {
+  wizardState.medical.undiagnosedSymptoms = true;
+  navigateTo('medical-2a');
+}
+
+// ─── Summary ──────────────────────────────────────────────────────────────────
+function renderSummary() {
+  const s = wizardState;
+  const rows = [
+    ['Cover type',    s.tripType],
+    ['Destination',   s.destination],
+    ['Cruise',        s.cruise ? 'Yes' : 'No'],
+    ['Cancellation',  s.cancellationCover ? `£${s.cancellationCover.toLocaleString()}` : '—'],
+    ['Start date',    formatDate(s.holidayStart) || '—'],
+    ['End date',      s.tripType === 'annual' ? 'N/A (annual)' : formatDate(s.holidayEnd) || '—'],
+    ['Travellers',    s.travellerCount],
+    ['Relationship',  s.travellerCount === 1 ? 'Solo' : s.relationship],
+    ['Email',         s.email || 'Not provided'],
+    ['Medical clear', Object.values(s.medical).every(v => v === false) ? 'Yes' : 'No (see answers)']
+  ];
+
+  let html = '<div class="summary-section-title">Your details</div>';
+  rows.forEach(([label, val]) => {
+    html += `<div class="summary-row"><span class="s-label">${label}</span><span class="s-value">${val ?? '—'}</span></div>`;
+  });
+
+  if (s.travellers.length) {
+    html += '<div class="summary-section-title">Travellers</div>';
+    s.travellers.forEach((t, i) => {
+      html += `<div class="summary-row"><span class="s-label">Traveller ${i+1}</span><span class="s-value">${t.title} ${t.firstName} ${t.lastName}<br><small style="font-weight:300;color:#888">${t.dob}</small></span></div>`;
+    });
+  }
+  document.getElementById('summaryContent').innerHTML = html;
+}
+
+function buildPayload() {
+  const s = wizardState;
+  return {
+    tripType: s.tripType, destination: s.destination,
+    cruise: s.cruise, cancellationCover: s.cancellationCover,
+    holidayStart: toDateParam(s.holidayStart), holidayEnd: toDateParam(s.holidayEnd),
+    travellerCount: s.travellerCount, relationship: s.relationship,
+    travellers: s.travellers.map(t => ({ title: t.title, firstName: t.firstName, lastName: t.lastName, dob: t.dob })),
+    email: s.email,
+    medicalSurgeryTreatment:    s.medical.surgeryTreatment,
+    medicalUndiagnosedSymptoms: s.medical.undiagnosedSymptoms,
+    medicalListedConditions:    s.medical.listedConditions,
+    medicalRecentConditions:    s.medical.recentConditions
+  };
+}
+
+function submitQuote() {
+  navigateTo('results');
+  document.getElementById('resultsLoading').style.display = 'block';
+  document.getElementById('resultsError').style.display   = 'none';
+  document.getElementById('resultsSuccess').style.display = 'none';
+
+  const payload = buildPayload();
+  document.getElementById('payloadDebug').textContent = JSON.stringify(payload, null, 2);
+
+  // Test harness: hit the real API endpoint (will likely 404 locally — that's fine)
+  fetch('/api/insurance/quote', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('resultsLoading').style.display = 'none';
+    document.getElementById('resultsSuccess').style.display = 'block';
+    const url = data.redirectUrl || '#';
+    document.getElementById('redirectLink').href = url;
+    document.getElementById('redirectUrl').textContent = url;
+  })
+  .catch(err => {
+    const errPayload = buildError({
+      level:          'error',
+      error_type:     'server',
+      error_code:     'quote-submit-error',
+      error_message:  err.message,
+      component:      'quote-submission',
+      customer_facing: true,
+      recoverable:    true,
+      extra: { stack: err.stack }
+    });
+    if (window.tracker) tracker.error(errPayload);
+    logDebug('error', 'quote-submit-error', errPayload);
+    document.getElementById('resultsLoading').style.display = 'none';
+    const errEl = document.getElementById('resultsError');
+    errEl.style.display = 'block';
+    errEl.innerHTML = `<strong>API unavailable (local test harness)</strong><br><code>${err.message}</code><br><br>Payload is shown below — copy it to test against a real endpoint.<br><pre style="margin-top:8px;font-size:11px;">${JSON.stringify(payload,null,2)}</pre>`;
+  });
+}
+
+// ─── Page init ────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  // id conflict check (tracker-pr guide §Gotcha)
+  document.querySelectorAll('[id][data-track-name]').forEach(el => {
+    console.warn(`[tracker] id conflict: <${el.tagName.toLowerCase()} id="${el.id}" data-track-name="${el.dataset.trackName}"> — tracker will use the id`);
+  });
+
+  // ?trackdebug=1 hint
+  if (new URLSearchParams(window.location.search).get('trackdebug') === '1') {
+    console.info('%c[tracker] debug mode active', 'color:#a78bfa;font-weight:bold');
+  }
+
+  // Initialise tracker
+  if (window.tracker) {
+    tracker.initialise({
+      env:          new URLSearchParams(window.location.search).get('env') === 'dev' ? 'development' : 'production',
+      service:      'wizard_search_form',
+      organisation: 'Holiday Extras Limited',
+      lb:           false,
+      // PII field IDs — suppresses auto-capture on each keystroke
+      // tracked explicitly at submit time via tracker.inline() instead
+      untracked_inputs: ['travellerTitle','travellerFirstName','travellerLastName','travellerDob','emailInput']
+    });
+    logDebug('init', 'tracker.initialise', { service: 'wizard_search_form', organisation: 'Holiday Extras Limited' });
+    // tracker.page() fires on the first showStep() call below — one per stage transition
+
+  } else {
+    console.warn('[tracker] window.tracker not yet available — script may still be loading (defer)');
+  }
+
+  // ── PII field focus tracking ─────────────────────────────────────────────────
+  // Fields in untracked_inputs receive no automatic focus/capture events.
+  // Attach focus listeners here so entry is recorded even if the field is
+  // abandoned before submit — matching integration guide §PII Handling.
+  // Name resolves at fire time so it reflects the current traveller instance.
+  [
+    { id: 'travellerTitle',     name: () => `traveller${currentTravellerIndex + 1}-q1-title`     },
+    { id: 'travellerFirstName', name: () => `traveller${currentTravellerIndex + 1}-q2-firstname` },
+    { id: 'travellerLastName',  name: () => `traveller${currentTravellerIndex + 1}-q3-lastname`  },
+    { id: 'travellerDob',       name: () => `traveller${currentTravellerIndex + 1}-q4-dob`       },
+    { id: 'emailInput',         name: () => 'email-q1-email'                                     }
+  ].forEach(({ id, name }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('focus', () => {
+      const fieldName = name();
+      logDebug('inline', 'focus:' + fieldName, { name: fieldName, value: null });
+      if (window.tracker) tracker.inline('focus', { name: fieldName, value: null });
+    });
+  });
+
+  showStep(window.location.hash.slice(1) || 'trip-type');
+});
+
+// ─── Global error handlers ───────────────────────────────────────────────────
+// Mirrors orion's internal _trackError listener (tripapp.js line ~5461)
+window.addEventListener('error', function (event) {
+  const err = event.error || event;
+  const payload = buildError({
+    level: 'fatal', error_type: 'client', error_code: 'uncaught',
+    error_message: err.message || String(event),
+    component: 'global', customer_facing: true, recoverable: false,
+    extra: { stack: err.stack }
+  });
+  if (window.tracker) tracker.error(payload);
+  logDebug('error', 'uncaught', payload);
+});
+
+window.addEventListener('unhandledrejection', function (event) {
+  const reason = event.reason || {};
+  const payload = buildError({
+    level: 'fatal', error_type: 'client', error_code: 'uncaught-rejection',
+    error_message: reason.message || String(reason),
+    component: 'global', customer_facing: true, recoverable: false,
+    extra: { stack: reason.stack }
+  });
+  if (window.tracker) tracker.error(payload);
+  logDebug('error', 'uncaught-rejection', payload);
+});
+
+// ─── Manual error test buttons ───────────────────────────────────────────────
+function fireCaughtError() {
+  const payload = buildError({ level: 'warn', error_type: 'client', error_code: 'restore-state-error',
+    error_message: 'Failed to restore wizard state from localStorage',
+    component: 'state-manager', customer_facing: false, recoverable: true });
+  if (window.tracker) tracker.error(payload);
+  logDebug('error', 'restore-state-error', payload);
+}
+function fireApiError() {
+  const payload = buildError({ level: 'error', error_type: 'server', error_code: 'api-error',
+    error_message: 'Network request failed: POST /api/insurance/quote returned 502',
+    component: 'quote-api', customer_facing: true, recoverable: true });
+  if (window.tracker) tracker.error(payload);
+  logDebug('error', 'api-error', payload);
+}
+function fireQuoteSubmitError() {
+  const payload = buildError({ level: 'error', error_type: 'server', error_code: 'quote-submit-error',
+    error_message: 'Redirect URL missing from quote response',
+    component: 'quote-submission', customer_facing: true, recoverable: false });
+  if (window.tracker) tracker.error(payload);
+  logDebug('error', 'quote-submit-error', payload);
+}
+function fireUncaughtError() { setTimeout(() => { throw new Error('Test uncaught exception — insurance-wizard harness'); }, 0); }
+function fireUnhandledRejection() { Promise.reject(new Error('Test unhandled rejection — insurance-wizard harness')); }
+</script>
+
+<!-- ===================================================================
+     ADDITIONAL TRACKING: scroll depth, dead click, rage click, u-turn,
+     struggle score — per Orion Tracking Requirements doc
+=================================================================== -->
+<script>
+// ─── Session signal counters (used for struggle score) ───────────────────────
+const _signals = {
+  rageClicks:    0,
+  deadClicks:    0,
+  uTurns:        0,
+  shallowScroll: false,   // true if user never passed 25% on current step
+  quickExit:     false    // true if u-turn happened within 3s of step load
+};
+
+// ─── Scroll depth ─────────────────────────────────────────────────────────────
+// Fires at 25 / 50 / 75 / 100% milestones, time-to-full-scroll, and
+// page_load_fully_scrolled / page_fully_scrolled on load.
+(function initScrollDepth() {
+  const milestones = [25, 50, 75, 100];
+  const fired = new Set();
+  let scrollStartTime = null;
+
+  function getScrollPct() {
+    const el   = document.documentElement;
+    const max  = el.scrollHeight - el.clientHeight;
+    if (max <= 0) return 100;
+    return Math.round((el.scrollTop / max) * 100);
+  }
+
+  function checkScroll() {
+    const pct = getScrollPct();
+    if (pct > 0 && scrollStartTime === null) scrollStartTime = Date.now();
+
+    milestones.forEach(m => {
+      if (pct >= m && !fired.has(m)) {
+        fired.add(m);
+        const payload = { name: 'scroll_depth_reached', value: m };
+        logDebug('inline', 'capture:scroll_depth_reached', payload);
+        if (window.tracker) tracker.inline('capture', payload);
+
+        if (m === 25) _signals.shallowScroll = false;
+
+        if (m === 100 && scrollStartTime !== null) {
+          const secs = Math.round((Date.now() - scrollStartTime) / 1000);
+          const tPayload = { name: 'time_to_full_scroll_time', value: secs };
+          logDebug('inline', 'capture:time_to_full_scroll_time', tPayload);
+          if (window.tracker) tracker.inline('capture', tPayload);
+
+          const fpPayload = { name: 'page_fully_scrolled', value: true };
+          logDebug('track', 'auto_capture:page_fully_scrolled', fpPayload);
+          if (window.tracker) tracker.track('auto_capture', fpPayload);
+        }
+      }
+    });
+  }
+
+  window.addEventListener('scroll', checkScroll, { passive: true });
+
+  // On step change reset fired set and check if page already fits in viewport
+  window._resetScrollDepth = function () {
+    fired.clear();
+    scrollStartTime = null;
+    _signals.shallowScroll = true;
+
+    const el  = document.documentElement;
+    const ratio = el.scrollHeight / el.clientHeight;
+    const fullyVisible = ratio <= 1.05;
+
+    const plPayload = { name: 'page_load_fully_scrolled', value: Math.round(ratio * 100) / 100 };
+    logDebug('track', 'auto_capture:page_load_fully_scrolled', plPayload);
+    if (window.tracker) tracker.track('auto_capture', plPayload);
+
+    if (fullyVisible) {
+      [25, 50, 75, 100].forEach(m => fired.add(m));
+      _signals.shallowScroll = false;
+      const fpPayload = { name: 'page_fully_scrolled', value: true };
+      logDebug('track', 'auto_capture:page_fully_scrolled', fpPayload);
+      if (window.tracker) tracker.track('auto_capture', fpPayload);
+    }
+  };
+})();
+
+// Reset scroll tracking on each step transition.
+// showStep is a global function declaration (window.showStep). Overwriting window.showStep
+// here means the existing hashchange listener at line 1022 ("() => showStep(hash)")
+// also picks up the new wrapped version — no second listener needed.
+const _origShowStep = showStep;
+window.showStep = function (hash) {
+  _origShowStep(hash);
+  if (window._resetScrollDepth) window._resetScrollDepth();
+};
+
+// ─── Rage click ───────────────────────────────────────────────────────────────
+// 3+ clicks on the same element within 1.5 seconds
+(function initRageClick() {
+  let lastEl = null, clickCount = 0, clickTimer = null;
+
+  function getCSSPath(el) {
+    const parts = [];
+    while (el && el.nodeType === Node.ELEMENT_NODE) {
+      let sel = el.tagName.toLowerCase();
+      if (el.id) { sel += '#' + el.id; parts.unshift(sel); break; }
+      if (el.className) sel += '.' + [...el.classList].slice(0, 2).join('.');
+      const siblings = el.parentNode ? [...el.parentNode.children].filter(s => s.tagName === el.tagName) : [];
+      if (siblings.length > 1) sel += `:nth-child(${[...el.parentNode.children].indexOf(el) + 1})`;
+      parts.unshift(sel);
+      el = el.parentNode;
+    }
+    return parts.join(' > ');
+  }
+
+  document.addEventListener('click', function (e) {
+    if (e.target === lastEl) {
+      clickCount++;
+      clearTimeout(clickTimer);
+      clickTimer = setTimeout(() => { clickCount = 0; lastEl = null; }, 1500);
+
+      if (clickCount >= 3) {
+        const cssPath = getCSSPath(e.target);
+        _signals.rageClicks++;
+        const payload = buildError({
+          level: 'warn', error_type: 'client', error_code: 'rage_click',
+          error_message: 'User clicked the same element 3+ times in rapid succession',
+          component: cssPath, customer_facing: false, recoverable: true,
+          extra: { css_path: cssPath, click_count: clickCount }
+        });
+        logDebug('inline', 'click:rage_click', { name: 'rage_click', value: cssPath, click_count: clickCount });
+        if (window.tracker) {
+          tracker.inline('click', { name: 'rage_click', value: cssPath });
+          tracker.error(payload);
+        }
+        clickCount = 0;
+      }
+    } else {
+      lastEl = e.target;
+      clickCount = 1;
+      clearTimeout(clickTimer);
+      clickTimer = setTimeout(() => { clickCount = 0; lastEl = null; }, 1500);
+    }
+  }, true);
+})();
+
+// ─── Dead click ───────────────────────────────────────────────────────────────
+// Fires when user clicks an element that has no interactive behaviour.
+// Interactive = a/button/input/select/textarea, has onclick attr, has cursor:pointer,
+// has data-track-name, or is inside one of the above.
+(function initDeadClick() {
+  function isInteractive(el) {
+    const INTERACTIVE_TAGS = new Set(['A','BUTTON','INPUT','SELECT','TEXTAREA','LABEL']);
+    let node = el;
+    while (node && node !== document.body) {
+      if (INTERACTIVE_TAGS.has(node.tagName)) return true;
+      if (node.getAttribute('onclick')) return true;
+      if (node.dataset && node.dataset.trackName) return true;
+      if (node.getAttribute('role') === 'button') return true;
+      const cursor = window.getComputedStyle(node).cursor;
+      if (cursor === 'pointer') return true;
+      node = node.parentElement;
+    }
+    return false;
+  }
+
+  function getCSSPath(el) {
+    const parts = [];
+    let node = el;
+    while (node && node.nodeType === Node.ELEMENT_NODE) {
+      let sel = node.tagName.toLowerCase();
+      if (node.id) { sel += '#' + node.id; parts.unshift(sel); break; }
+      if (node.className) sel += '.' + [...node.classList].slice(0, 2).join('.');
+      parts.unshift(sel);
+      node = node.parentElement;
+    }
+    return parts.join(' > ');
+  }
+
+  document.addEventListener('click', function (e) {
+    if (!isInteractive(e.target)) {
+      const cssPath = getCSSPath(e.target);
+      _signals.deadClicks++;
+      logDebug('inline', 'click:dead_click', { name: 'dead_click', value: cssPath });
+      if (window.tracker) tracker.inline('click', { name: 'dead_click', value: cssPath });
+    }
+  }, true);
+})();
+
+// ─── U-turn ───────────────────────────────────────────────────────────────────
+// Fires when user navigates back without meaningfully interacting with a step.
+// "Meaningful interaction" = at least one tracker.inline() or tracker.track() call
+// fired since the step loaded (other than the page view itself).
+(function initUTurn() {
+  let _stepLoadTime = Date.now();
+  let _hadInteraction = false;
+  let _prevHash = window.location.hash.slice(1) || 'trip-type';
+
+  // Mark interaction whenever inline/track fires (after intercept is set up)
+  window._markInteraction = function () { _hadInteraction = true; };
+
+  window.addEventListener('hashchange', function () {
+    const newHash = window.location.hash.slice(1);
+    const steps   = window.getSteps ? getSteps() : [];
+    const prevIdx = steps.indexOf(_prevHash.startsWith('traveller-') ? 'traveller' : _prevHash);
+    const newIdx  = steps.indexOf(newHash.startsWith('traveller-')   ? 'traveller' : newHash);
+
+    console.log('[u-turn debug]', { prevHash: _prevHash, newHash, prevIdx, newIdx, hadInteraction: _hadInteraction, steps });
+
+    // Navigating backwards without interaction = u-turn
+    if (newIdx < prevIdx && !_hadInteraction) {
+      const elapsed = Math.round((Date.now() - _stepLoadTime) / 1000);
+      _signals.uTurns++;
+      if (elapsed <= 3) _signals.quickExit = true;
+      const stageLabel = STAGES[_prevHash]?.label || (_prevHash.startsWith('traveller-') ? 'traveller_details' : _prevHash);
+      logDebug('track', 'auto_capture:u_turn', { name: 'u_turn', value: stageLabel, time_on_step_seconds: elapsed });
+      if (window.tracker) tracker.track('auto_capture', { name: 'u_turn', value: stageLabel, time_on_step_seconds: elapsed });
+    }
+
+    _prevHash        = newHash;
+    _stepLoadTime    = Date.now();
+    _hadInteraction  = false;
+  });
+})();
+
+// ─── Struggle score ───────────────────────────────────────────────────────────
+// Composite metric. Fired on beforeunload so it captures the full session.
+// For a single test session rates are 0 or 1 (signal occurred or not).
+// formula: ((rage_click_rate*0.35) + (dead_click_rate*0.25) + (u_turn_rate*0.25)
+//           + (shallow_scroll_rate*0.10) + (quick_exit_rate*0.05)) * 100
+function calcAndFireStruggleScore() {
+  const rr = _signals.rageClicks  > 0 ? 1 : 0;
+  const dr = _signals.deadClicks  > 0 ? 1 : 0;
+  const ur = _signals.uTurns      > 0 ? 1 : 0;
+  const sr = _signals.shallowScroll   ? 1 : 0;
+  const qr = _signals.quickExit       ? 1 : 0;
+
+  const score = Math.round(((rr * 0.35) + (dr * 0.25) + (ur * 0.25) + (sr * 0.10) + (qr * 0.05)) * 100);
+
+  const hash = window.location.hash.slice(1) || 'trip-type';
+  const payload = {
+    event_name:  'struggle_score',
+    event_value: score,
+    event_properties: {
+      domain:               window.location.hostname,
+      brand:                'holidayextras',
+      agent_code:           'HX',
+      locale:               'en-GB',
+      currency:             'GBP',
+      page_product_type:    'insurance',
+      page_product_location: '',
+      page_type:            'wizard_search_form',
+      date:                 new Date().toISOString().slice(0, 10),
+      signals: { rage_clicks: _signals.rageClicks, dead_clicks: _signals.deadClicks,
+                 u_turns: _signals.uTurns, shallow_scroll: _signals.shallowScroll,
+                 quick_exit: _signals.quickExit }
+    }
+  };
+  logDebug('track', 'struggle_score', payload);
+  if (window.tracker) tracker.track('auto_capture', payload);
+}
+
+window.addEventListener('beforeunload', calcAndFireStruggleScore);
+
+// Also expose for manual testing
+window._calcStruggleScore = calcAndFireStruggleScore;
+</script>
+
+<!-- ===================================================================
+     DEBUG PANEL JAVASCRIPT
+=================================================================== -->
+<script>
+let _eventCount = 0;
+let _debugOpen  = true;
+let _errorOpen  = true;
+
+function logDebug(method, name, payload) {
+  _eventCount++;
+  const badge = document.getElementById('eventCount');
+  if (badge) badge.textContent = _eventCount;
+
+  const body = document.getElementById('debugBody');
+  if (!body) return;
+
+  const placeholder = body.querySelector('div');
+  if (placeholder && placeholder.textContent.includes('Waiting')) placeholder.remove();
+
+  const isError = method === 'error' || (method === 'track' && name === 'error');
+  const AUTO_CAPTURE_NAMES = /auto_capture|scroll_depth|dead_click|rage_click|u_turn|struggle_score|stage_\d|wizard_stage_total/;
+  const isAutocapture = !isError && AUTO_CAPTURE_NAMES.test(name);
+  const ts  = new Date().toISOString().slice(11, 23);
+  const div = document.createElement('div');
+  div.className = 'log-entry' + (isError ? ' is-error' : '');
+
+  const cls = isError        ? 'm-error'
+            : isAutocapture  ? 'm-autocapture'
+            : { page:'m-page', track:'m-track', inline:'m-inline', init:'m-init' }[method] || 'm-track';
+
+  const label = isError ? 'error' : isAutocapture ? 'auto' : method;
+  div.innerHTML = `<span class="ts">${ts}</span><span class="${cls}">[${label}]</span> <strong>${name}</strong><pre>${JSON.stringify(payload, null, 2)}</pre>`;
+  body.insertBefore(div, body.firstChild);
+
+  console.group(`%c[tracker:${label}] %c${name}`, 'color:#a78bfa;font-weight:bold', 'color:#222');
+  console.log(payload);
+  console.groupEnd();
+}
+
+function toggleDebug() {
+  _debugOpen = !_debugOpen;
+  document.getElementById('debugBody').style.display = _debugOpen ? 'block' : 'none';
+}
+
+function toggleErrorCard() {
+  _errorOpen = !_errorOpen;
+  document.getElementById('errorCardBody').style.display = _errorOpen ? 'flex' : 'none';
+}
+
+// Intercept tracker calls to log them in the panel.
+// Runs immediately — tracker script is synchronous (no defer) so window.tracker
+// is available by the time this script block executes.
+(function interceptTracker() {
+  if (!window.tracker) {
+    logDebug('init', 'tracker-not-found', { hint: 'window.tracker is undefined — script may have been blocked. Check Network tab.' });
+    return;
+  }
+  const orig = {
+    page:   tracker.page.bind(tracker),
+    track:  tracker.track.bind(tracker),
+    inline: tracker.inline.bind(tracker),
+    error:  tracker.error.bind(tracker)
+  };
+  tracker.page   = (t, p) => { logDebug('page',   t, p); orig.page(t, p);   };
+  tracker.track  = (e, p) => { logDebug('track',  e, p); orig.track(e, p);  };
+  tracker.inline = (a, p) => { logDebug('inline', a, p); if (window._markInteraction) window._markInteraction(); orig.inline(a, p); };
+  tracker.error  = (p)    => { logDebug('error',  p.code || 'error', p); orig.error(p); };
+  logDebug('init', 'tracker-intercepted', { status: 'ready — all tracker calls will appear here' });
+})();
+</script>
+
+</body>
+</html>
