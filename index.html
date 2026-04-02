@@ -645,7 +645,7 @@
         <li><strong>Online</strong> — traveldirectory.moneyhelper.org.uk</li>
       </ul>
     </div>
-    <button class="back-btn" onclick="goBack()">← Go back</button>
+    <button class="back-btn" data-track-name="hardstop-back" onclick="goBack()">← Go back</button>
   </section>
 
   <!-- ===== STEP 13: MEDICAL Q2 ===== -->
@@ -771,7 +771,7 @@
       </a>
       <div class="summary-section-title">API Payload (test harness)</div>
       <pre id="payloadDebug" style="background:#f5f5f7;border:1px solid var(--grey-light);border-radius:8px;padding:12px;font-family:monospace;font-size:12px;white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto;color:#333;line-height:1.5;"></pre>
-      <button class="back-btn" onclick="navigateTo('summary')">← Back to summary</button>
+      <button class="back-btn" data-track-name="results-back-to-summary" onclick="navigateTo('summary')">← Back to summary</button>
     </div>
   </section>
 
@@ -1842,10 +1842,12 @@ function getCssPath(el) {
 })();
 
 // ─── U-turn ───────────────────────────────────────────────────────────────────
+// Detects backward navigation within a stage by comparing stage numbers from
+// wizard:stageLoad events. Works with hash-based SPA navigation (not popstate).
 (function () {
-  const arrivalTime         = Date.now();
-  const landingHash         = window.location.hash;
   const U_TURN_THRESHOLD_MS = 10000;
+  let stageArrivalTime = Date.now();
+  let prevStageNum = 0;
 
   function getCurrentScrollDepth() {
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
@@ -1853,18 +1855,22 @@ function getCssPath(el) {
     return docHeight > 0 ? Math.round((scrollTop / docHeight) * 100) : 0;
   }
 
-  window.addEventListener('popstate', function () {
-    if ((Date.now() - arrivalTime) < U_TURN_THRESHOLD_MS) {
-      const timeSpent = Math.round((Date.now() - arrivalTime) / 1000);
-      logDebug('inline', 'auto_capture:u_turn', { value: currentPageType, time_spent_seconds: timeSpent });
+  document.addEventListener('wizard:stageLoad', (e) => {
+    const newStageNum  = e.detail.stageNumber;
+    const timeOnStage  = Date.now() - stageArrivalTime;
+
+    if (prevStageNum > 0 && newStageNum < prevStageNum && timeOnStage < U_TURN_THRESHOLD_MS) {
+      const timeSpent = Math.round(timeOnStage / 1000);
+      logDebug('inline', 'auto_capture:u_turn', { abandoned: `stage_${prevStageNum}`, returned_to: `stage_${newStageNum}`, time_spent_seconds: timeSpent });
       if (window.tracker) tracker.inline('auto_capture', {
         action: {
           name:     'u_turn',
-          value:    currentPageType,
+          value:    `stage_${prevStageNum}`,
           location: 'landing'
         },
         tags: [
-          { name: 'abandoned_page',       string: landingHash },
+          { name: 'abandoned_page',       string: `stage_${prevStageNum}` },
+          { name: 'returned_to_page',     string: `stage_${newStageNum}` },
           { name: 'time_spent_seconds',   number: timeSpent },
           { name: 'scroll_depth_reached', number: getCurrentScrollDepth() },
           { name: 'viewport_width',       number: window.innerWidth }
@@ -1872,6 +1878,9 @@ function getCssPath(el) {
       });
       document.dispatchEvent(new CustomEvent('wizard:uTurn'));
     }
+
+    prevStageNum     = newStageNum;
+    stageArrivalTime = Date.now();
   });
 })();
 
