@@ -962,7 +962,9 @@ const TOTAL_STAGES = 18;   // longest possible journey including all conditional
 
 // Visited flags — prevent stage auto-capture from re-firing on back-navigation
 const visitedStages = new Set();
-let stageTotalFired  = false;
+let stageTotalFired    = false;
+let productTypeTagged  = false;  // tracker.tag() fires once — persists page_product_type on all events
+let currentPageType    = 'stage_1'; // updated on every stage transition
 
 function showStep(hash) {
   const backBtn = document.getElementById('btnBack');
@@ -986,30 +988,38 @@ function showStep(hash) {
   if (hash === 'summary')       renderSummary();
 
   // ── tracker.page() on every stage transition ─────────────────────────────────
-  // page_type = stage_{N} carries stage identity on every event fired on this
-  // stage (load, click, capture, focus) — no joining needed to get stage context.
-  // Fires unconditionally on every stage navigation including back-navigation.
+  // page_type = stage_{N} carries stage identity on every event fired on this stage.
   let stageInfo = STAGES[hash];
   if (!stageInfo && hash.startsWith('traveller-')) {
     stageInfo = { num: 9, label: 'traveller_details' };
   }
   if (stageInfo) {
-    const pageType = `stage_${stageInfo.num}`;
+    const pageType  = `stage_${stageInfo.num}`;
+    currentPageType = pageType; // expose to all other event handlers
+
     logDebug('page', `wizard_search_form:${pageType}`, { page_type: pageType, page_product_type: 'insurance' });
     if (window.tracker) tracker.page('landing', { page_type: pageType, page_product_type: 'insurance' });
 
-    // ── Stage name auto-capture — fires once per stage per session ──────────
-    // Visited flag prevents re-firing on back-navigation or re-renders.
+    // ── tracker.tag() — persists page_product_type on all event types ────────
+    // Fires once per session. After this call every click, capture and focus
+    // event automatically carries page_product_type without re-passing it.
+    if (!productTypeTagged) {
+      if (window.tracker) tracker.tag([{ name: 'page_product_type', string: 'insurance' }]);
+      logDebug('init', 'tracker.tag', { page_product_type: 'insurance' });
+      productTypeTagged = true;
+    }
+
+    // ── Stage name auto-capture — fires once per stage per session ────────────
     // action_object.name matches page_type so the stage map needs no join.
     if (!visitedStages.has(stageInfo.num)) {
-      const acPayload = { name: pageType, value: stageInfo.label };
+      const acPayload = { action: { name: pageType, value: stageInfo.label, location: pageType } };
       logDebug('inline', `auto_capture:${pageType}`, acPayload);
       if (window.tracker) tracker.inline('auto_capture', acPayload);
       visitedStages.add(stageInfo.num);
 
       // ── wizard_stage_total — fires once at stage 1 only ──────────────────
       if (stageInfo.num === 1 && !stageTotalFired) {
-        const totalPayload = { name: 'wizard_stage_total', value: TOTAL_STAGES };
+        const totalPayload = { action: { name: 'wizard_stage_total', value: TOTAL_STAGES, location: 'stage_1' } };
         logDebug('inline', 'auto_capture:wizard_stage_total', totalPayload);
         if (window.tracker) tracker.inline('auto_capture', totalPayload);
         stageTotalFired = true;
@@ -1148,8 +1158,13 @@ function confirmHolidayStart() {
   // tracker.inline() — dynamic value, mirrors the live site exactly
   if (window.tracker) {
     tracker.inline('click', {
-      name:  'cover_start-q4-continue',
-      value: toDateParam(wizardState.holidayStart) || ''
+      action: {
+        name:     'cover_start-q4-continue',
+        value:    toDateParam(wizardState.holidayStart) || '',
+        type:     'button',
+        text:     'Continue',
+        location: currentPageType
+      }
     });
     logDebug('inline', 'click', { name: 'cover_start-q4-continue', value: toDateParam(wizardState.holidayStart) });
   }
@@ -1161,8 +1176,13 @@ function confirmHolidayStart() {
 function confirmHolidayEnd() {
   if (window.tracker) {
     tracker.inline('click', {
-      name:  'cover_end-q4-continue',
-      value: toDateParam(wizardState.holidayEnd) || ''
+      action: {
+        name:     'cover_end-q4-continue',
+        value:    toDateParam(wizardState.holidayEnd) || '',
+        type:     'button',
+        text:     'Continue',
+        location: currentPageType
+      }
     });
     logDebug('inline', 'click', { name: 'cover_end-q4-continue', value: toDateParam(wizardState.holidayEnd) });
   }
@@ -1356,11 +1376,11 @@ function confirmTraveller() {
   // PII fields captured explicitly at submit time (integration guide §PII Handling)
   if (window.tracker) {
     const prefix = `traveller${n}`;
-    tracker.inline('capture', { name: prefix + '-q1-title',     value: title });
-    tracker.inline('capture', { name: prefix + '-q2-firstname', value: first });
-    tracker.inline('capture', { name: prefix + '-q3-lastname',  value: last  });
-    tracker.inline('capture', { name: prefix + '-q4-dob',       value: dob   });
-    tracker.inline('click',   { name: prefix + '-q5-continue',  value: `${title} ${first} ${last}` });
+    tracker.inline('capture', { action: { name: prefix + '-q1-title',     value: title, type: 'select', id: 'travellerTitle',     location: currentPageType } });
+    tracker.inline('capture', { action: { name: prefix + '-q2-firstname', value: first, type: 'input',  id: 'travellerFirstName', location: currentPageType } });
+    tracker.inline('capture', { action: { name: prefix + '-q3-lastname',  value: last,  type: 'input',  id: 'travellerLastName',  location: currentPageType } });
+    tracker.inline('capture', { action: { name: prefix + '-q4-dob',       value: dob,   type: 'input',  id: 'travellerDob',       location: currentPageType } });
+    tracker.inline('click',   { action: { name: prefix + '-q5-continue',  value: `${title} ${first} ${last}`, type: 'button', text: 'Continue', location: currentPageType } });
     logDebug('inline', `traveller${n}-capture+continue`, { title, first, last, dob });
   }
 
@@ -1404,8 +1424,13 @@ function confirmEmail() {
   // PII field captured explicitly at submit, not on keystroke (tracker-pr guide §PII Handling)
   if (window.tracker && email) {
     tracker.inline('capture', {
-      name:  'email-q1-email',
-      value: email
+      action: {
+        name:     'email-q1-email',
+        value:    email,
+        type:     'input',
+        id:       'emailInput',
+        location: currentPageType
+      }
     });
     logDebug('inline', 'capture', { name: 'email-q1-email', value: email });
   }
@@ -1559,18 +1584,20 @@ window.addEventListener('DOMContentLoaded', () => {
   // abandoned before submit — matching integration guide §PII Handling.
   // Name resolves at fire time so it reflects the current traveller instance.
   [
-    { id: 'travellerTitle',     name: () => `traveller${currentTravellerIndex + 1}-q1-title`     },
-    { id: 'travellerFirstName', name: () => `traveller${currentTravellerIndex + 1}-q2-firstname` },
-    { id: 'travellerLastName',  name: () => `traveller${currentTravellerIndex + 1}-q3-lastname`  },
-    { id: 'travellerDob',       name: () => `traveller${currentTravellerIndex + 1}-q4-dob`       },
-    { id: 'emailInput',         name: () => 'email-q1-email'                                     }
-  ].forEach(({ id, name }) => {
+    { id: 'travellerTitle',     fieldName: () => `traveller${currentTravellerIndex + 1}-q1-title`,     type: 'select' },
+    { id: 'travellerFirstName', fieldName: () => `traveller${currentTravellerIndex + 1}-q2-firstname`, type: 'input'  },
+    { id: 'travellerLastName',  fieldName: () => `traveller${currentTravellerIndex + 1}-q3-lastname`,  type: 'input'  },
+    { id: 'travellerDob',       fieldName: () => `traveller${currentTravellerIndex + 1}-q4-dob`,       type: 'input'  },
+    { id: 'emailInput',         fieldName: () => 'email-q1-email',                                     type: 'input'  }
+  ].forEach(({ id, fieldName, type }) => {
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener('focus', () => {
-      const fieldName = name();
-      logDebug('inline', 'focus:' + fieldName, { name: fieldName, value: null });
-      if (window.tracker) tracker.inline('focus', { name: fieldName, value: null });
+      const name = fieldName();
+      logDebug('inline', 'focus:' + name, { name, value: null, type, id, location: currentPageType });
+      if (window.tracker) tracker.inline('focus', {
+        action: { name, value: null, type, id, location: currentPageType }
+      });
     });
   });
 
@@ -1665,7 +1692,7 @@ const _signals = {
     milestones.forEach(m => {
       if (pct >= m && !fired.has(m)) {
         fired.add(m);
-        const payload = { name: 'scroll_depth_reached', value: m };
+        const payload = { action: { name: 'scroll_depth_reached', value: m, location: currentPageType } };
         logDebug('inline', 'capture:scroll_depth_reached', payload);
         if (window.tracker) tracker.inline('capture', payload);
 
@@ -1673,13 +1700,13 @@ const _signals = {
 
         if (m === 100 && scrollStartTime !== null) {
           const secs = Math.round((Date.now() - scrollStartTime) / 1000);
-          const tPayload = { name: 'time_to_full_scroll_time', value: secs };
+          const tPayload = { action: { name: 'time_to_full_scroll_time', value: secs, location: currentPageType } };
           logDebug('inline', 'capture:time_to_full_scroll_time', tPayload);
           if (window.tracker) tracker.inline('capture', tPayload);
 
-          const fpPayload = { name: 'page_fully_scrolled', value: true };
-          logDebug('track', 'auto_capture:page_fully_scrolled', fpPayload);
-          if (window.tracker) tracker.track('auto_capture', fpPayload);
+          const fpPayload = { action: { name: 'page_fully_scrolled', value: true, location: currentPageType } };
+          logDebug('inline', 'auto_capture:page_fully_scrolled', fpPayload);
+          if (window.tracker) tracker.inline('auto_capture', fpPayload);
         }
       }
     });
@@ -1697,16 +1724,16 @@ const _signals = {
     const ratio = el.scrollHeight / el.clientHeight;
     const fullyVisible = ratio <= 1.05;
 
-    const plPayload = { name: 'page_load_fully_scrolled', value: Math.round(ratio * 100) / 100 };
-    logDebug('track', 'auto_capture:page_load_fully_scrolled', plPayload);
-    if (window.tracker) tracker.track('auto_capture', plPayload);
+    const plPayload = { action: { name: 'page_load_fully_scrolled', value: Math.round(ratio * 100) / 100, location: currentPageType } };
+    logDebug('inline', 'auto_capture:page_load_fully_scrolled', plPayload);
+    if (window.tracker) tracker.inline('auto_capture', plPayload);
 
     if (fullyVisible) {
       [25, 50, 75, 100].forEach(m => fired.add(m));
       _signals.shallowScroll = false;
-      const fpPayload = { name: 'page_fully_scrolled', value: true };
-      logDebug('track', 'auto_capture:page_fully_scrolled', fpPayload);
-      if (window.tracker) tracker.track('auto_capture', fpPayload);
+      const fpPayload = { action: { name: 'page_fully_scrolled', value: true, location: currentPageType } };
+      logDebug('inline', 'auto_capture:page_fully_scrolled', fpPayload);
+      if (window.tracker) tracker.inline('auto_capture', fpPayload);
     }
   };
 })();
@@ -1757,7 +1784,7 @@ window.showStep = function (hash) {
         });
         logDebug('inline', 'click:rage_click', { name: 'rage_click', value: cssPath, click_count: clickCount });
         if (window.tracker) {
-          tracker.inline('click', { name: 'rage_click', value: cssPath });
+          tracker.inline('click', { action: { name: 'rage_click', value: cssPath, location: currentPageType } });
           tracker.error(payload);
         }
         clickCount = 0;
@@ -1809,7 +1836,7 @@ window.showStep = function (hash) {
       const cssPath = getCSSPath(e.target);
       _signals.deadClicks++;
       logDebug('inline', 'click:dead_click', { name: 'dead_click', value: cssPath });
-      if (window.tracker) tracker.inline('click', { name: 'dead_click', value: cssPath });
+      if (window.tracker) tracker.inline('click', { action: { name: 'dead_click', value: cssPath, location: currentPageType } });
     }
   }, true);
 })();
@@ -1840,8 +1867,8 @@ window.showStep = function (hash) {
       _signals.uTurns++;
       if (elapsed <= 3) _signals.quickExit = true;
       const stageLabel = STAGES[_prevHash]?.label || (_prevHash.startsWith('traveller-') ? 'traveller_details' : _prevHash);
-      logDebug('track', 'auto_capture:u_turn', { name: 'u_turn', value: stageLabel, time_on_step_seconds: elapsed });
-      if (window.tracker) tracker.track('auto_capture', { name: 'u_turn', value: stageLabel, time_on_step_seconds: elapsed });
+      logDebug('inline', 'auto_capture:u_turn', { name: 'u_turn', value: stageLabel, time_on_step_seconds: elapsed });
+      if (window.tracker) tracker.inline('auto_capture', { action: { name: 'u_turn', value: stageLabel, location: currentPageType }, tags: [{ name: 'time_on_step_seconds', number: elapsed }] });
     }
 
     _prevHash        = newHash;
