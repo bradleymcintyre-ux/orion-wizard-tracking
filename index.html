@@ -343,10 +343,7 @@
   <section class="step" id="step-trip-type">
     <h2 class="step-title">How many trips are you planning in the next 12 months?</h2>
 
-    <div class="card card-large"
-         data-track-name="cover_type"
-         data-track-value="annual"
-         onclick="selectTripType('annual')">
+    <div class="card card-large" onclick="selectTripType('annual', this)">
       <div class="card-content">
         <div class="card-title">Annual Cover</div>
         <div class="card-subtitle">Unlimited trips for 12 months. Usually better value if you travel more than once.</div>
@@ -356,10 +353,7 @@
 
     <p class="step-desc mt-16 mb-24">Annual cover renews automatically — we'll remind you before it does.</p>
 
-    <div class="card card-large"
-         data-track-name="cover_type"
-         data-track-value="single"
-         onclick="selectTripType('single')">
+    <div class="card card-large" onclick="selectTripType('single', this)">
       <div class="card-content">
         <div class="card-title">Single Trip Cover</div>
         <div class="card-subtitle">One trip only. You'll still see the annual price to compare before you decide.</div>
@@ -372,32 +366,32 @@
   <section class="step" id="step-destination">
     <h2 class="step-title">Travelling to</h2>
 
-    <div class="card" data-track-name="destination" data-track-value="europe-inc" onclick="selectDestination('europe-inc')">
+    <div class="card" onclick="selectDestination('europe-inc', this)">
       <div class="card-content">
         <div class="card-title">Europe <em>including</em></div>
         <div class="card-subtitle">Spain, Cyprus, Malta, Turkey, Greece</div>
       </div>
       <span class="card-chevron">›</span>
     </div>
-    <div class="card" data-track-name="destination" data-track-value="europe-exc" onclick="selectDestination('europe-exc')">
+    <div class="card" onclick="selectDestination('europe-exc', this)">
       <div class="card-content">
         <div class="card-title">Europe <em>excluding</em></div>
         <div class="card-subtitle">Spain, Cyprus, Malta, Turkey, Greece</div>
       </div>
       <span class="card-chevron">›</span>
     </div>
-    <div class="card" data-track-name="destination" data-track-value="aus-nz" onclick="selectDestination('aus-nz')">
+    <div class="card" onclick="selectDestination('aus-nz', this)">
       <div class="card-content"><div class="card-title">Australia &amp; New Zealand</div></div>
       <span class="card-chevron">›</span>
     </div>
-    <div class="card" data-track-name="destination" data-track-value="worldwide-inc" onclick="selectDestination('worldwide-inc')">
+    <div class="card" onclick="selectDestination('worldwide-inc', this)">
       <div class="card-content">
         <div class="card-title">Worldwide <em>including</em></div>
         <div class="card-subtitle">USA, Canada, Mexico and Caribbean</div>
       </div>
       <span class="card-chevron">›</span>
     </div>
-    <div class="card" data-track-name="destination" data-track-value="worldwide-exc" onclick="selectDestination('worldwide-exc')">
+    <div class="card" onclick="selectDestination('worldwide-exc', this)">
       <div class="card-content">
         <div class="card-title">Worldwide <em>excluding</em></div>
         <div class="card-subtitle">USA, Canada, Mexico and Caribbean</div>
@@ -410,11 +404,11 @@
   <section class="step" id="step-cruise">
     <h2 class="step-title">Going on a cruise?</h2>
     <div class="cards-row">
-      <div class="card-yn" data-track-name="cruise" data-track-value="no" onclick="selectCruise(false)">
+      <div class="card-yn" onclick="selectCruise(false, this)">
         <div class="yn-title">No <span class="yn-chevron">›</span></div>
         <div class="yn-subtitle">Cruise cover not required</div>
       </div>
-      <div class="card-yn" data-track-name="cruise" data-track-value="yes" onclick="selectCruise(true)">
+      <div class="card-yn" onclick="selectCruise(true, this)">
         <div class="yn-title">Yes <span class="yn-chevron">›</span></div>
         <div class="yn-subtitle">Add Cruise Cover</div>
       </div>
@@ -425,16 +419,16 @@
   <!-- ===== STEP 4: CANCELLATION ===== -->
   <section class="step" id="step-cancellation">
     <h2 class="step-title">Cancellation cover</h2>
-    <button class="amount-btn" data-track-name="cancellation" data-track-value="500"   onclick="selectCancellation(500)"><strong>£500</strong> per person</button>
-    <button class="amount-btn" data-track-name="cancellation" data-track-value="1000"  onclick="selectCancellation(1000)"><strong>£1,000</strong> per person</button>
-    <button class="amount-btn" data-track-name="cancellation" data-track-value="2500"  onclick="selectCancellation(2500)"><strong>£2,500</strong> per person</button>
-    <button class="amount-btn" data-track-name="cancellation" data-track-value="5000"  onclick="selectCancellation(5000)"><strong>£5,000</strong> per person</button>
-    <button class="amount-btn" data-track-name="cancellation" data-track-value="6000"  onclick="selectCancellation(6000)"><strong>£6,000</strong> per person</button>
-    <button class="amount-btn" data-track-name="cancellation" data-track-value="7000"  onclick="selectCancellation(7000)"><strong>£7,000</strong> per person</button>
-    <button class="amount-btn" data-track-name="cancellation" data-track-value="8000"  onclick="selectCancellation(8000)"><strong>£8,000</strong> per person</button>
-    <button class="amount-btn" data-track-name="cancellation" data-track-value="9000"  onclick="selectCancellation(9000)"><strong>£9,000</strong> per person</button>
-    <button class="amount-btn" data-track-name="cancellation" data-track-value="10000" onclick="selectCancellation(10000)"><strong>£10,000</strong> per person</button>
-    <button class="amount-btn" data-track-name="cancellation" data-track-value="10001" onclick="selectCancellation(10001)"><strong>£10,000+</strong> per person</button>
+    <button class="amount-btn" onclick="selectCancellation(500, this)"><strong>£500</strong> per person</button>
+    <button class="amount-btn" onclick="selectCancellation(1000, this)"><strong>£1,000</strong> per person</button>
+    <button class="amount-btn" onclick="selectCancellation(2500, this)"><strong>£2,500</strong> per person</button>
+    <button class="amount-btn" onclick="selectCancellation(5000, this)"><strong>£5,000</strong> per person</button>
+    <button class="amount-btn" onclick="selectCancellation(6000, this)"><strong>£6,000</strong> per person</button>
+    <button class="amount-btn" onclick="selectCancellation(7000, this)"><strong>£7,000</strong> per person</button>
+    <button class="amount-btn" onclick="selectCancellation(8000, this)"><strong>£8,000</strong> per person</button>
+    <button class="amount-btn" onclick="selectCancellation(9000, this)"><strong>£9,000</strong> per person</button>
+    <button class="amount-btn" onclick="selectCancellation(10000, this)"><strong>£10,000</strong> per person</button>
+    <button class="amount-btn" onclick="selectCancellation(10001, this)"><strong>£10,000+</strong> per person</button>
   </section>
 
   <!-- ===== STEP 5: HOLIDAY START ===== -->
@@ -470,36 +464,36 @@
   <section class="step" id="step-travellers">
     <h2 class="step-title">Travellers</h2>
     <div class="number-grid">
-      <button class="number-btn" data-track-name="party_size" data-track-value="1" onclick="selectTravellers(1)">1</button>
-      <button class="number-btn" data-track-name="party_size" data-track-value="2" onclick="selectTravellers(2)">2</button>
-      <button class="number-btn" data-track-name="party_size" data-track-value="3" onclick="selectTravellers(3)">3</button>
-      <button class="number-btn" data-track-name="party_size" data-track-value="4" onclick="selectTravellers(4)">4</button>
-      <button class="number-btn" data-track-name="party_size" data-track-value="5" onclick="selectTravellers(5)">5</button>
-      <button class="number-btn" data-track-name="party_size" data-track-value="6" onclick="selectTravellers(6)">6</button>
-      <button class="number-btn" data-track-name="party_size" data-track-value="7" onclick="selectTravellers(7)">7</button>
-      <button class="number-btn" data-track-name="party_size" data-track-value="8" onclick="selectTravellers(8)">8</button>
-      <button class="number-btn" data-track-name="party_size" data-track-value="9" onclick="selectTravellers(9)">9</button>
+      <button class="number-btn" onclick="selectTravellers(1, this)">1</button>
+      <button class="number-btn" onclick="selectTravellers(2, this)">2</button>
+      <button class="number-btn" onclick="selectTravellers(3, this)">3</button>
+      <button class="number-btn" onclick="selectTravellers(4, this)">4</button>
+      <button class="number-btn" onclick="selectTravellers(5, this)">5</button>
+      <button class="number-btn" onclick="selectTravellers(6, this)">6</button>
+      <button class="number-btn" onclick="selectTravellers(7, this)">7</button>
+      <button class="number-btn" onclick="selectTravellers(8, this)">8</button>
+      <button class="number-btn" onclick="selectTravellers(9, this)">9</button>
     </div>
   </section>
 
   <!-- ===== STEP 8: RELATIONSHIP ===== -->
   <section class="step" id="step-relationship">
     <h2 class="step-title">Relationship</h2>
-    <div class="card" data-track-name="relationship" data-track-value="couple" onclick="selectRelationship('couple')">
+    <div class="card" onclick="selectRelationship('couple', this)">
       <div class="card-content">
         <div class="card-title">Couple</div>
         <div class="card-subtitle">Two adults living together.</div>
       </div>
       <span class="card-chevron">›</span>
     </div>
-    <div class="card" data-track-name="relationship" data-track-value="family" onclick="selectRelationship('family')">
+    <div class="card" onclick="selectRelationship('family', this)">
       <div class="card-content">
         <div class="card-title">Family</div>
         <div class="card-subtitle">Parents and up to five children aged 17 or under.</div>
       </div>
       <span class="card-chevron">›</span>
     </div>
-    <div class="card" data-track-name="relationship" data-track-value="group" onclick="selectRelationship('group')">
+    <div class="card" onclick="selectRelationship('group', this)">
       <div class="card-content">
         <div class="card-title">Group</div>
         <div class="card-subtitle">Anyone travelling together.</div>
@@ -622,11 +616,11 @@
       <p>Currently undergoing or previously received treatment for alcohol or drug addiction within the last five years</p>
     </div>
     <div class="cards-row mt-16">
-      <div class="card-yn" data-track-name="medical_q1" data-track-value="no" onclick="answerMedical('surgeryTreatment', false)">
+      <div class="card-yn" onclick="answerMedical('surgeryTreatment', false, this)">
         <div class="yn-title">No <span class="yn-chevron">›</span></div>
         <div class="yn-subtitle">None of these apply</div>
       </div>
-      <div class="card-yn" data-track-name="medical_q1" data-track-value="yes" onclick="answerMedical('surgeryTreatment', true)">
+      <div class="card-yn" onclick="answerMedical('surgeryTreatment', true, this)">
         <div class="yn-title">Yes <span class="yn-chevron">›</span></div>
         <div class="yn-subtitle">Applies to someone</div>
       </div>
@@ -656,11 +650,11 @@
       <p>Currently experiencing symptoms that have not yet been diagnosed?</p>
     </div>
     <div class="cards-row mt-16">
-      <div class="card-yn" data-track-name="medical_q2" data-track-value="no" onclick="answerMedical('undiagnosedSymptoms', false)">
+      <div class="card-yn" onclick="answerMedical('undiagnosedSymptoms', false, this)">
         <div class="yn-title">No <span class="yn-chevron">›</span></div>
         <div class="yn-subtitle">Doesn't apply to anyone</div>
       </div>
-      <div class="card-yn" data-track-name="medical_q2" data-track-value="yes" onclick="undiagnosedYes()">
+      <div class="card-yn" onclick="undiagnosedYes(this)">
         <div class="yn-title">Yes <span class="yn-chevron">›</span></div>
         <div class="yn-subtitle">Applies to someone</div>
       </div>
@@ -674,11 +668,7 @@
       <p>Your policy won't cover any conditions and/or symptoms that haven't been diagnosed if you need to cancel your trip, cut it short, or make an emergency medical claim.</p>
       <p>You won't be covered while your symptoms are being investigated.</p>
     </div>
-    <!-- No id — data-track-name auto-captured -->
-    <div class="card-yn" style="margin-top:16px;"
-         data-track-name="medical_q2a"
-         data-track-value="understood"
-         onclick="navigateTo('medical-3')">
+    <div class="card-yn" style="margin-top:16px;" onclick="selectMedicalQ2a(this)">
       <div class="yn-title">Understood <span class="yn-chevron">›</span></div>
       <div class="yn-subtitle">Continue with my quote</div>
     </div>
@@ -701,11 +691,11 @@
       <p>Any form of cancer, whether in remission or not.</p>
     </div>
     <div class="cards-row mt-16">
-      <div class="card-yn" data-track-name="medical_q3" data-track-value="no" onclick="answerMedical('listedConditions', false)">
+      <div class="card-yn" onclick="answerMedical('listedConditions', false, this)">
         <div class="yn-title">No <span class="yn-chevron">›</span></div>
         <div class="yn-subtitle">None of these apply</div>
       </div>
-      <div class="card-yn" data-track-name="medical_q3" data-track-value="yes" onclick="answerMedical('listedConditions', true)">
+      <div class="card-yn" onclick="answerMedical('listedConditions', true, this)">
         <div class="yn-title">Yes <span class="yn-chevron">›</span></div>
         <div class="yn-subtitle">Applies to someone</div>
       </div>
@@ -720,11 +710,11 @@
       <p>In the last two years, has anyone travelling had any physical or psychological conditions that required treatment, consultations, investigations or medication?</p>
     </div>
     <div class="cards-row mt-16">
-      <div class="card-yn" data-track-name="medical_q4" data-track-value="no" onclick="answerMedical('recentConditions', false)">
+      <div class="card-yn" onclick="answerMedical('recentConditions', false, this)">
         <div class="yn-title">No <span class="yn-chevron">›</span></div>
         <div class="yn-subtitle">None of these apply</div>
       </div>
-      <div class="card-yn" data-track-name="medical_q4" data-track-value="yes" onclick="answerMedical('recentConditions', true)">
+      <div class="card-yn" onclick="answerMedical('recentConditions', true, this)">
         <div class="yn-title">Yes <span class="yn-chevron">›</span></div>
         <div class="yn-subtitle">Applies to someone</div>
       </div>
@@ -1025,17 +1015,66 @@ function showStep(hash) {
 window.addEventListener('hashchange', () => showStep(window.location.hash.slice(1)));
 
 // ─── Step handlers ───────────────────────────────────────────────────────────
-function selectTripType(type)    { wizardState.tripType = type;                navigateTo('destination'); }
-function selectDestination(dest) { wizardState.destination = dest;             navigateTo('cruise'); }
-function selectCruise(val)       { wizardState.cruise = val;                   navigateTo('cancellation'); }
-function selectCancellation(amt) { wizardState.cancellationCover = amt;        navigateTo('holiday-start'); }
-function selectRelationship(rel) { wizardState.relationship = rel;             navigateTo('traveller-1'); }
+function getElementLabel(el) {
+  if (!el) return null;
+  const t = (el.innerText || el.textContent || '').trim().replace(/\s+/g, ' ');
+  return t || el.getAttribute('aria-label') || null;
+}
 
-function selectTravellers(count) {
+function selectTripType(type, el) {
+  wizardState.tripType = type;
+  if (window.tracker) {
+    tracker.inline('click', { action: { name: 'trip_type', value: type, type: el ? el.tagName.toLowerCase() : 'div', text: getElementLabel(el), id: el ? el.id || null : null, location: currentPageType } });
+    document.dispatchEvent(new CustomEvent('wizard:click', { detail: { fieldName: 'trip_type', isField: false } }));
+  }
+  navigateTo('destination');
+}
+
+function selectDestination(dest, el) {
+  wizardState.destination = dest;
+  if (window.tracker) {
+    tracker.inline('click', { action: { name: 'destination', value: dest, type: el ? el.tagName.toLowerCase() : 'div', text: getElementLabel(el), id: el ? el.id || null : null, location: currentPageType } });
+    document.dispatchEvent(new CustomEvent('wizard:click', { detail: { fieldName: 'destination', isField: false } }));
+  }
+  navigateTo('cruise');
+}
+
+function selectCruise(val, el) {
+  wizardState.cruise = val;
+  if (window.tracker) {
+    tracker.inline('click', { action: { name: 'cruise', value: val, type: el ? el.tagName.toLowerCase() : 'div', text: getElementLabel(el), id: el ? el.id || null : null, location: currentPageType } });
+    document.dispatchEvent(new CustomEvent('wizard:click', { detail: { fieldName: 'cruise', isField: false } }));
+  }
+  navigateTo('cancellation');
+}
+
+function selectCancellation(amt, el) {
+  wizardState.cancellationCover = amt;
+  if (window.tracker) {
+    tracker.inline('click', { action: { name: 'cancellation_cover', value: amt, type: el ? el.tagName.toLowerCase() : 'button', text: getElementLabel(el), id: el ? el.id || null : null, location: currentPageType } });
+    document.dispatchEvent(new CustomEvent('wizard:click', { detail: { fieldName: 'cancellation_cover', isField: false } }));
+  }
+  navigateTo('holiday-start');
+}
+
+function selectRelationship(rel, el) {
+  wizardState.relationship = rel;
+  if (window.tracker) {
+    tracker.inline('click', { action: { name: 'relationship', value: rel, type: el ? el.tagName.toLowerCase() : 'div', text: getElementLabel(el), id: el ? el.id || null : null, location: currentPageType } });
+    document.dispatchEvent(new CustomEvent('wizard:click', { detail: { fieldName: 'relationship', isField: false } }));
+  }
+  navigateTo('traveller-1');
+}
+
+function selectTravellers(count, el) {
   wizardState.travellerCount = count;
   while (wizardState.travellers.length < count)
     wizardState.travellers.push({ title:'', firstName:'', lastName:'', dob:'' });
   wizardState.travellers.length = count;
+  if (window.tracker) {
+    tracker.inline('click', { action: { name: 'traveller_count', value: count, type: el ? el.tagName.toLowerCase() : 'button', text: getElementLabel(el), id: el ? el.id || null : null, location: currentPageType } });
+    document.dispatchEvent(new CustomEvent('wizard:click', { detail: { fieldName: 'traveller_count', isField: false } }));
+  }
   navigateTo(count === 1 ? 'traveller-1' : 'relationship');
 }
 
@@ -1445,8 +1484,19 @@ function agreeEligibility() {
   navigateTo('medical-1');
 }
 
-function answerMedical(field, val) {
+function answerMedical(field, val, el) {
   wizardState.medical[field] = val;
+  const fieldNameMap = {
+    surgeryTreatment:    'medical_surgery_treatment',
+    undiagnosedSymptoms: 'medical_undiagnosed_symptoms',
+    listedConditions:    'medical_listed_conditions',
+    recentConditions:    'medical_recent_conditions'
+  };
+  if (window.tracker) {
+    const trackName = fieldNameMap[field] || field;
+    tracker.inline('click', { action: { name: trackName, value: val, type: el ? el.tagName.toLowerCase() : 'div', text: getElementLabel(el), id: el ? el.id || null : null, location: currentPageType } });
+    document.dispatchEvent(new CustomEvent('wizard:click', { detail: { fieldName: trackName, isField: false } }));
+  }
   const map = {
     surgeryTreatment:    val ? 'medical-hardstop' : 'medical-2',
     undiagnosedSymptoms: val ? 'medical-2a'       : 'medical-3',
@@ -1456,9 +1506,21 @@ function answerMedical(field, val) {
   navigateTo(map[field]);
 }
 
-function undiagnosedYes() {
+function undiagnosedYes(el) {
   wizardState.medical.undiagnosedSymptoms = true;
+  if (window.tracker) {
+    tracker.inline('click', { action: { name: 'medical_undiagnosed_symptoms', value: true, type: el ? el.tagName.toLowerCase() : 'div', text: getElementLabel(el), id: el ? el.id || null : null, location: currentPageType } });
+    document.dispatchEvent(new CustomEvent('wizard:click', { detail: { fieldName: 'medical_undiagnosed_symptoms', isField: false } }));
+  }
   navigateTo('medical-2a');
+}
+
+function selectMedicalQ2a(el) {
+  if (window.tracker) {
+    tracker.inline('click', { action: { name: 'medical_q2a_continue', value: null, type: el ? el.tagName.toLowerCase() : 'div', text: getElementLabel(el), id: el ? el.id || null : null, location: currentPageType } });
+    document.dispatchEvent(new CustomEvent('wizard:click', { detail: { fieldName: 'medical_q2a_continue', isField: false } }));
+  }
+  navigateTo('medical-3');
 }
 
 // ─── Summary ──────────────────────────────────────────────────────────────────
