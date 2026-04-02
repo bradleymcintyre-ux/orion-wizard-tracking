@@ -443,7 +443,7 @@
     <h2 class="step-title">Holiday starts</h2>
     <div class="calendar" id="calStart"></div>
     <div id="calStartNote" class="cal-note"></div>
-    <!-- continue-btn has no id — data-track-name on the inline click is fired via tracker.inline() in confirmHolidayStart() -->
+    <!-- continue-btn has no id — data-track-name on the inline click is fired via wizardTrack() in confirmHolidayStart() -->
     <button class="continue-btn" id="btnStartContinue" onclick="confirmHolidayStart()" disabled>
       <div class="btn-text">
         <span class="btn-label">Continue</span>
@@ -510,7 +510,7 @@
 
   <!-- ===== STEP 9: TRAVELLER DETAILS (dynamic — reused for each traveller) ===== -->
   <!-- Fields have IDs (needed for JS reads) → in untracked_inputs                 -->
-  <!-- Tracked explicitly at submit time via tracker.inline() in confirmTraveller() -->
+  <!-- Tracked explicitly at submit time via wizardTrack() in confirmTraveller() -->
   <section class="step" id="step-traveller">
     <h2 class="step-title" id="travellerHeading">Traveller</h2>
 
@@ -819,6 +819,14 @@
      with test-harness additions noted inline.
 =================================================================== -->
 <script>
+// ─── wizardTrack wrapper ──────────────────────────────────────────────────────
+// Replaces tracker.tag() which is not supported and throws uncaught exceptions.
+// Injects product_type onto every inline event so no tag call is needed.
+let _productType = null;
+function wizardTrack(eventType, payload) {
+  tracker.inline(eventType, { ...payload, product_type: _productType });
+}
+
 // ─── Schema constants (from Orion Tracking Requirements doc) ─────────────────
 // Use these to validate page_system / page_type / page_product_type values
 // before they are sent. assertSchema() warns in the console for unknown values.
@@ -963,7 +971,6 @@ const TOTAL_STAGES = 18;   // longest possible journey including all conditional
 // Visited flags — prevent stage auto-capture from re-firing on back-navigation
 const visitedStages = new Set();
 let stageTotalFired    = false;
-let productTypeTagged  = false;  // tracker.tag() fires once — persists page_product_type on all events
 let currentPageType    = 'stage_1'; // updated on every stage transition
 
 function showStep(hash) {
@@ -1000,28 +1007,19 @@ function showStep(hash) {
     logDebug('page', `wizard_search_form:${pageType}`, { page_type: pageType, page_product_type: 'insurance' });
     if (window.tracker) tracker.page('landing', { page_type: pageType, page_product_type: 'insurance' });
 
-    // ── tracker.tag() — persists page_product_type on all event types ────────
-    // Fires once per session. After this call every click, capture and focus
-    // event automatically carries page_product_type without re-passing it.
-    if (!productTypeTagged) {
-      if (window.tracker) tracker.tag([{ name: 'page_product_type', string: 'insurance' }]);
-      logDebug('init', 'tracker.tag', { page_product_type: 'insurance' });
-      productTypeTagged = true;
-    }
-
     // ── Stage name auto-capture — fires once per stage per session ────────────
     // action_object.name matches page_type so the stage map needs no join.
     if (!visitedStages.has(stageInfo.num)) {
       const acPayload = { action: { name: pageType, value: stageInfo.label, location: pageType } };
       logDebug('inline', `auto_capture:${pageType}`, acPayload);
-      if (window.tracker) tracker.inline('auto_capture', acPayload);
+      if (window.tracker) wizardTrack('auto_capture', acPayload);
       visitedStages.add(stageInfo.num);
 
       // ── wizard_stage_total — fires once at stage 1 only ──────────────────
       if (stageInfo.num === 1 && !stageTotalFired) {
         const totalPayload = { action: { name: 'wizard_stage_total', value: TOTAL_STAGES, location: 'stage_1' } };
         logDebug('inline', 'auto_capture:wizard_stage_total', totalPayload);
-        if (window.tracker) tracker.inline('auto_capture', totalPayload);
+        if (window.tracker) wizardTrack('auto_capture', totalPayload);
         stageTotalFired = true;
       }
     }
@@ -1155,9 +1153,9 @@ function updateCalContinue(type) {
 }
 
 function confirmHolidayStart() {
-  // tracker.inline() — dynamic value, mirrors the live site exactly
+  // wizardTrack() — dynamic value, mirrors the live site exactly
   if (window.tracker) {
-    tracker.inline('click', {
+    wizardTrack('click', {
       action: {
         name:     'cover_start-q4-continue',
         value:    toDateParam(wizardState.holidayStart) || '',
@@ -1175,7 +1173,7 @@ function confirmHolidayStart() {
 
 function confirmHolidayEnd() {
   if (window.tracker) {
-    tracker.inline('click', {
+    wizardTrack('click', {
       action: {
         name:     'cover_end-q4-continue',
         value:    toDateParam(wizardState.holidayEnd) || '',
@@ -1376,11 +1374,11 @@ function confirmTraveller() {
   // PII fields captured explicitly at submit time (integration guide §PII Handling)
   if (window.tracker) {
     const prefix = `traveller${n}`;
-    tracker.inline('capture', { action: { name: prefix + '-q1-title',     value: title, type: 'select', id: 'travellerTitle',     location: currentPageType } });
-    tracker.inline('capture', { action: { name: prefix + '-q2-firstname', value: first, type: 'input',  id: 'travellerFirstName', location: currentPageType } });
-    tracker.inline('capture', { action: { name: prefix + '-q3-lastname',  value: last,  type: 'input',  id: 'travellerLastName',  location: currentPageType } });
-    tracker.inline('capture', { action: { name: prefix + '-q4-dob',       value: dob,   type: 'input',  id: 'travellerDob',       location: currentPageType } });
-    tracker.inline('click',   { action: { name: prefix + '-q5-continue',  value: `${title} ${first} ${last}`, type: 'button', text: 'Continue', location: currentPageType } });
+    wizardTrack('capture', { action: { name: prefix + '-q1-title',     value: title, type: 'select', id: 'travellerTitle',     location: currentPageType } });
+    wizardTrack('capture', { action: { name: prefix + '-q2-firstname', value: first, type: 'input',  id: 'travellerFirstName', location: currentPageType } });
+    wizardTrack('capture', { action: { name: prefix + '-q3-lastname',  value: last,  type: 'input',  id: 'travellerLastName',  location: currentPageType } });
+    wizardTrack('capture', { action: { name: prefix + '-q4-dob',       value: dob,   type: 'input',  id: 'travellerDob',       location: currentPageType } });
+    wizardTrack('click',   { action: { name: prefix + '-q5-continue',  value: `${title} ${first} ${last}`, type: 'button', text: 'Continue', location: currentPageType } });
     logDebug('inline', `traveller${n}-capture+continue`, { title, first, last, dob });
   }
 
@@ -1423,7 +1421,7 @@ function confirmEmail() {
   wizardState.email = email || null;
   // PII field captured explicitly at submit, not on keystroke (tracker-pr guide §PII Handling)
   if (window.tracker && email) {
-    tracker.inline('capture', {
+    wizardTrack('capture', {
       action: {
         name:     'email-q1-email',
         value:    email,
@@ -1568,9 +1566,11 @@ window.addEventListener('DOMContentLoaded', () => {
       organisation: 'Holiday Extras Limited',
       lb:           false,
       // PII field IDs — suppresses auto-capture on each keystroke
-      // tracked explicitly at submit time via tracker.inline() instead
+      // tracked explicitly at submit time via wizardTrack() instead
       untracked_inputs: ['travellerTitle','travellerFirstName','travellerLastName','travellerDob','emailInput']
     });
+    // Set product type for wizardTrack wrapper — before any wizardTrack calls
+    _productType = 'insurance';
     logDebug('init', 'tracker.initialise', { service: 'wizard_search_form', organisation: 'Holiday Extras Limited' });
     // tracker.page() fires on the first showStep() call below — one per stage transition
 
@@ -1578,10 +1578,9 @@ window.addEventListener('DOMContentLoaded', () => {
     console.warn('[tracker] window.tracker not yet available — script may still be loading (defer)');
   }
 
-  // ── PII field focus tracking ─────────────────────────────────────────────────
-  // Fields in untracked_inputs receive no automatic focus/capture events.
-  // Attach focus listeners here so entry is recorded even if the field is
-  // abandoned before submit — matching integration guide §PII Handling.
+  // ── PII field click tracking ──────────────────────────────────────────────────
+  // Fields in untracked_inputs receive no automatic events.
+  // Click events replace focus — same entry signal, simpler implementation.
   // Name resolves at fire time so it reflects the current traveller instance.
   [
     { id: 'travellerTitle',     fieldName: () => `traveller${currentTravellerIndex + 1}-q1-title`,     type: 'select' },
@@ -1592,11 +1591,18 @@ window.addEventListener('DOMContentLoaded', () => {
   ].forEach(({ id, fieldName, type }) => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.addEventListener('focus', () => {
+    el.addEventListener('click', () => {
       const name = fieldName();
-      logDebug('inline', 'focus:' + name, { name, value: null, type, id, location: currentPageType });
-      if (window.tracker) tracker.inline('focus', {
-        action: { name, value: null, type, id, location: currentPageType }
+      logDebug('inline', 'click:' + name, { name, value: el.value || null, type, id, location: currentPageType });
+      if (window.tracker) wizardTrack('click', {
+        action: {
+          name,
+          value:    el.value || null,
+          type,
+          id,
+          text:     el.placeholder || el.labels?.[0]?.innerText || null,
+          location: currentPageType
+        }
       });
     });
   });
@@ -1694,7 +1700,7 @@ const _signals = {
         fired.add(m);
         const payload = { action: { name: 'scroll_depth_reached', value: m, location: currentPageType } };
         logDebug('inline', 'capture:scroll_depth_reached', payload);
-        if (window.tracker) tracker.inline('capture', payload);
+        if (window.tracker) wizardTrack('capture', payload);
 
         if (m === 25) _signals.shallowScroll = false;
 
@@ -1702,11 +1708,11 @@ const _signals = {
           const secs = Math.round((Date.now() - scrollStartTime) / 1000);
           const tPayload = { action: { name: 'time_to_full_scroll_time', value: secs, location: currentPageType } };
           logDebug('inline', 'capture:time_to_full_scroll_time', tPayload);
-          if (window.tracker) tracker.inline('capture', tPayload);
+          if (window.tracker) wizardTrack('capture', tPayload);
 
           const fpPayload = { action: { name: 'page_fully_scrolled', value: true, location: currentPageType } };
           logDebug('inline', 'auto_capture:page_fully_scrolled', fpPayload);
-          if (window.tracker) tracker.inline('auto_capture', fpPayload);
+          if (window.tracker) wizardTrack('auto_capture', fpPayload);
         }
       }
     });
@@ -1726,14 +1732,14 @@ const _signals = {
 
     const plPayload = { action: { name: 'page_load_fully_scrolled', value: Math.round(ratio * 100) / 100, location: currentPageType } };
     logDebug('inline', 'auto_capture:page_load_fully_scrolled', plPayload);
-    if (window.tracker) tracker.inline('auto_capture', plPayload);
+    if (window.tracker) wizardTrack('auto_capture', plPayload);
 
     if (fullyVisible) {
       [25, 50, 75, 100].forEach(m => fired.add(m));
       _signals.shallowScroll = false;
       const fpPayload = { action: { name: 'page_fully_scrolled', value: true, location: currentPageType } };
       logDebug('inline', 'auto_capture:page_fully_scrolled', fpPayload);
-      if (window.tracker) tracker.inline('auto_capture', fpPayload);
+      if (window.tracker) wizardTrack('auto_capture', fpPayload);
     }
   };
 })();
@@ -1784,7 +1790,7 @@ window.showStep = function (hash) {
         });
         logDebug('inline', 'click:rage_click', { name: 'rage_click', value: cssPath, click_count: clickCount });
         if (window.tracker) {
-          tracker.inline('click', { action: { name: 'rage_click', value: cssPath, location: currentPageType } });
+          wizardTrack('click', { action: { name: 'rage_click', value: cssPath, location: currentPageType } });
           tracker.error(payload);
         }
         clickCount = 0;
@@ -1836,14 +1842,14 @@ window.showStep = function (hash) {
       const cssPath = getCSSPath(e.target);
       _signals.deadClicks++;
       logDebug('inline', 'click:dead_click', { name: 'dead_click', value: cssPath });
-      if (window.tracker) tracker.inline('click', { action: { name: 'dead_click', value: cssPath, location: currentPageType } });
+      if (window.tracker) wizardTrack('click', { action: { name: 'dead_click', value: cssPath, location: currentPageType } });
     }
   }, true);
 })();
 
 // ─── U-turn ───────────────────────────────────────────────────────────────────
 // Fires when user navigates back without meaningfully interacting with a step.
-// "Meaningful interaction" = at least one tracker.inline() or tracker.track() call
+// "Meaningful interaction" = at least one wizardTrack() or tracker.track() call
 // fired since the step loaded (other than the page view itself).
 (function initUTurn() {
   let _stepLoadTime = Date.now();
@@ -1868,7 +1874,7 @@ window.showStep = function (hash) {
       if (elapsed <= 3) _signals.quickExit = true;
       const stageLabel = STAGES[_prevHash]?.label || (_prevHash.startsWith('traveller-') ? 'traveller_details' : _prevHash);
       logDebug('inline', 'auto_capture:u_turn', { name: 'u_turn', value: stageLabel, time_on_step_seconds: elapsed });
-      if (window.tracker) tracker.inline('auto_capture', { action: { name: 'u_turn', value: stageLabel, location: currentPageType }, tags: [{ name: 'time_on_step_seconds', number: elapsed }] });
+      if (window.tracker) wizardTrack('auto_capture', { action: { name: 'u_turn', value: stageLabel, location: currentPageType }, tags: [{ name: 'time_on_step_seconds', number: elapsed }] });
     }
 
     _prevHash        = newHash;
