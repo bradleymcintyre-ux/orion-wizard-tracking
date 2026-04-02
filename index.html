@@ -1699,16 +1699,16 @@ function getCssPath(el) {
 
 // ─── Scroll depth ─────────────────────────────────────────────────────────────
 (function () {
-  const thresholds   = [25, 50, 75, 100];
-  const fired        = new Set();
-  const pageLoadTime = Date.now();
+  const thresholds = [25, 50, 75, 100];
+  let fired        = new Set();
+  let stageLoadTime = Date.now();
 
   function getScrollDepth() {
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
     const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-    return docHeight > 0 ? Math.round((scrollTop / docHeight) * 100) : 0;
-    if (max <= 0) return 100;
-    return docHeight > 0 ? Math.round((scrollTop / docHeight) * 100) : 0;
+    // Page fits fully in viewport — treat as 100% visible
+    if (docHeight <= 0) return 100;
+    return Math.round((scrollTop / docHeight) * 100);
   }
 
   function getScrollSection() {
@@ -1727,7 +1727,7 @@ function getCssPath(el) {
         });
 
         if (threshold === 100) {
-          const secondsToFull = Math.round((Date.now() - pageLoadTime) / 1000);
+          const secondsToFull = Math.round((Date.now() - stageLoadTime) / 1000);
           const cappedSeconds  = Math.min(secondsToFull, 600);
           logDebug('inline', 'auto_capture:page_fully_scrolled', {});
           if (window.tracker) tracker.inline('auto_capture', {
@@ -1742,12 +1742,13 @@ function getCssPath(el) {
     }
   }
 
-  window.addEventListener('load', () => {
-    const ratio = document.documentElement.scrollHeight / window.innerHeight;
-    logDebug('inline', 'auto_capture:page_load_fully_scrolled', { value: Math.round(ratio * 100) / 100 });
-    if (window.tracker) tracker.inline('auto_capture', {
-      action: { name: 'page_load_fully_scrolled', value: Math.round(ratio * 100) / 100, location: 'full_page' }
-    });
+  // Reset thresholds on each stage and immediately check depth.
+  // Fully-visible stages (docHeight <= 0) will fire all thresholds at once.
+  document.addEventListener('wizard:stageLoad', () => {
+    fired = new Set();
+    stageLoadTime = Date.now();
+    // Defer one frame so the new stage's DOM height is settled
+    requestAnimationFrame(onScroll);
   });
 
   let ticking = false;
